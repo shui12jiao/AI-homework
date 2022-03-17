@@ -1,5 +1,6 @@
 from typing import Counter
 import numpy as np
+import pandas as pd
 
 
 def create_data():
@@ -10,7 +11,9 @@ def create_data():
                         [0.639, 0.161], [0.657, 0.198], [0.360, 0.370],
                         [0.593, 0.042], [0.719, 0.103]])
     y_train = [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    return x_train, y_train
+    x_test = np.array([[0.300, 0.300], [0.400, 0.400], [0.500, 0.500]])
+    y_test = np.array([0, 1, 0])
+    return x_train, y_train, x_test, y_test
 
 
 def distance(x1, x2, p):
@@ -37,10 +40,15 @@ class KNN:
         most = Counter(k_labs).most_common(1)
         return most
 
+    def score(self, x_test, y_test):
+        cnt = 0
+        for x, y in zip(x_test, y_test):
+            if self.predit(x)[0][0] == y:
+                cnt += 1
+        return cnt/len(x_test)
+
 
 knn = KNN()
-x_train, y_train = create_data()
+x_train, y_train, x_test, y_test = create_data()
 knn.fit(x_train, y_train)
-print(knn.predit(np.array([2.2, 2.4, 5.8])))
-knn.k = 3
-print(knn.predit(np.array([2.2, 2.4, 5.8])))
+print(knn.score(x_test, y_test))
