@@ -1,14 +1,16 @@
 from typing import Counter
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 
 
 def create_data():
-    iris = load_iris()
+    iris = pd.read_csv('lab2\Iris.csv')
+    data = iris.values[1:4]
+    target = iris.values[-1]
     x_train, x_test, y_train, y_test = train_test_split(
-        iris.data, iris.target, test_size=0.2, random_state=77)
+        data, target, test_size=0.2, random_state=77)
     return x_train, y_train, x_test, y_test
 
 

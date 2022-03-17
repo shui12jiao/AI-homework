@@ -1,6 +1,5 @@
 from typing import Counter
 import numpy as np
-import pandas as pd
 
 
 def create_data():
