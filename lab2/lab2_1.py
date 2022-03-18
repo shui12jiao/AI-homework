@@ -1,5 +1,6 @@
 from typing import Counter
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def create_data():
@@ -13,6 +14,13 @@ def create_data():
     x_test = np.array([[0.300, 0.300], [0.400, 0.400], [0.500, 0.500]])
     y_test = np.array([0, 1, 0])
     return x_train, y_train, x_test, y_test
+
+
+def draw(x, y, n=0):
+    plt.figure(n)
+    plt.scatter(x[:, 0], x[:, 1], c=y, cmap='brg')
+    plt.scatter(x[:, 2], x[:, 3], c=y, cmap='gist_rainbow')
+    plt.show()
 
 
 def distance(x1, x2, p):

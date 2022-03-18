@@ -7,8 +7,8 @@ from sklearn.model_selection import train_test_split
 
 def create_data():
     iris = pd.read_csv('lab2\Iris.csv')
-    data = iris.values[1:4]
-    target = iris.values[-1]
+    data = iris.values[:, 1:5]
+    target = iris.values[:, 5]
     x_train, x_test, y_train, y_test = train_test_split(
         data, target, test_size=0.2, random_state=77)
     return x_train, y_train, x_test, y_test
@@ -61,19 +61,8 @@ class KNN:
 
 
 x_train, y_train, x_test, y_test = create_data()
-# draw(x_train, y_train, 1)
-# draw(x_test, y_test, 1)
-# draw(x_test, y_test, 1)
 
-knn = KNN(k=1)
+knn = KNN()
 knn.fit(x_train, y_train)
 
-# print(knn.score(x_test, y_test))
-# knn.k = 5
-# print(knn.score(x_test, y_test))
-# knn.p = 1
-# print(knn.score(x_test, y_test))
-
 print(y_test)
-y_predit = knn.y_predit(x_test)
-print(y_predit)
