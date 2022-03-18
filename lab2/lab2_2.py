@@ -65,4 +65,11 @@ x_train, y_train, x_test, y_test = create_data()
 knn = KNN()
 knn.fit(x_train, y_train)
 
+knn.k = 1
+print(y_test)
+knn.k = 3
+print(y_test)
+knn.k = 5
+print(y_test)
+knn.k = 7
 print(y_test)
