@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
+INF = 0
+
 
 def create_data():
     data = np.array(
@@ -28,20 +30,22 @@ def create_data():
     )
     target = [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     x_train, x_test, y_train, y_test = train_test_split(
-        data, target, test_size=0.2, random_state=77
+        data, target, test_size=0.2, random_state=1024
     )
     return x_train, y_train, x_test, y_test
 
 
 def draw(x, y, n=0):
     plt.figure(n)
-    plt.scatter(x[:, 0], x[:, 1], c=y, cmap="brg")
-    # plt.scatter(x[:, 2], x[:, 3], c=y, cmap="gist_rainbow")
+    # plt.scatter(x[:, 0], x[:, 1], c=y, cmap="brg")
+    plt.scatter(x[:, 0], x[:, 1], c=y, cmap="rainbow")
     plt.show()
 
 
 def distance(x1, x2, p):
-    return np.sum((x1 - x2) ** p) ** (1 / p)
+    if p == INF:
+        return np.max(x1 - x2)
+    return np.sum(np.abs((x1 - x2)) ** p) ** (1 / p)
 
 
 class KNN:
@@ -72,17 +76,15 @@ knn = KNN()
 x_train, y_train, x_test, y_test = create_data()
 knn.fit(x_train, y_train)
 
-# draw(x_train, y_train, 0)
-# draw(x_test, y_test, -1)
-
-knn.k = 3
 knn.p = 1
-print(knn.score(x_test, y_test))
-knn.p = 2
-print(knn.score(x_test, y_test))
 
-knn.k = 5
-knn.p = 1
-print(knn.score(x_test, y_test))
-knn.p = 2
-print(knn.score(x_test, y_test))
+scores = []
+for i in range(1, len(x_train)):
+    knn.k = i
+    scores.append(knn.score(x_test, y_test))
+
+
+plt.scatter(list(range(1, len(scores) + 1)), scores, cmap="brg")
+plt.xlabel("K")
+plt.ylabel("SCORE")
+plt.show()
