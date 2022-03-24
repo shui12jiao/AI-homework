@@ -3,13 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
-from lab2.lab2_2 import KNN
 
 INF = 0
 
 
 def create_data():
-    data = np.array(
+    X = np.array(
         [
             [0.697, 0.460],
             [0.774, 0.376],
@@ -30,11 +29,9 @@ def create_data():
             [0.719, 0.103],
         ]
     )
-    target = [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    x_train, x_test, y_train, y_test = train_test_split(
-        data, target, test_size=0.2, random_state=1024
-    )
-    return x_train, y_train, x_test, y_test
+    y = [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+    return X, y
 
 
 def distance(x1, x2, p=2, axis=0):
@@ -51,12 +48,12 @@ class KMeans:
     def fit(self, X):
         self.X = X
         n = np.shape(X)[1]
-        self.labs = np.zeros(n)
+        self.labs = np.zeros(np.shape(X)[0])
         self.centroids = np.zeros((self.k, n))
         for j in range(n):
             minJ = min(X[:, j])
             rangeJ = float(max(X[:, j]) - minJ)
-            self.centroids[:, j] = np.array(minJ + rangeJ * np.random.rand(self.k, 1))
+            self.centroids[:, j] = np.array(minJ + rangeJ * np.random.rand(self.k))
 
         for t in range(self.t):
             for i, x in enumerate(X):
@@ -72,17 +69,18 @@ class KMeans:
             dis = distance(x, self.centroids, axis=1)
             labs[i] = dis.argmin()
         return labs
-    
+
     def wss(self):
-        wss = np.zeros(self.k)
-
+        wss = 0
         for i in range(self.k):
-            # dis = distance(self.centroids[i], X[self.labs == i], axis=1)
+            wss += np.sum(
+                np.sum(np.abs(self.X[self.labs == 1] - self.centroids[i]) ** 2, axis=1)
+            )
+        return wss
 
-            
-        for i, x in enumerate(X):
-            labs[i] = dis.argmin()
 
-km = KMeans
+group, labs = create_data()
 
-_,res = 
+km = KMeans()
+km.fit(group)
+print(km.wss())
