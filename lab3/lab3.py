@@ -34,7 +34,7 @@ def create_data():
     return X, y
 
 
-def distance(x1, x2, p=2, axis=0):
+def distance(x1, x2, p=INF, axis=0):
     if p == INF:
         return np.max(x1 - x2)
     return np.sum(np.abs(x1 - x2) ** p, axis=axis) ** (1 / p)
@@ -45,7 +45,7 @@ class KMeans:
         self.k = k
         self.t = t
 
-    def fit(self, X, rand=True):
+    def fit(self, X, method=0):
         m = np.shape(X)[0]
         n = np.shape(X)[1]
         if self.k >= m:
@@ -54,13 +54,16 @@ class KMeans:
         self.labs = np.zeros(m)
         self.centroids = np.zeros((self.k, n))
 
-        for j in range(n):
-            minJ = min(X[:, j])
-            rangeJ = float(max(X[:, j]) - minJ)
-            if rand:
+        if method == 0:
+            np.random.shuffle(X)
+            self.centroids = X[: self.k]
+        elif method == 1:
+            self.centroids = X[range(0, self.k)]
+        elif method == 2:
+            for j in range(n):
+                minJ = min(X[:, j])
+                rangeJ = float(max(X[:, j]) - minJ)
                 self.centroids[:, j] = np.array(minJ + rangeJ * np.random.rand(self.k))
-            else:
-                self.centroids[:, j] = np.arange(minJ, minJ + rangeJ, rangeJ / self.k)
 
         for t in range(self.t):
             for i, x in enumerate(X):
@@ -68,8 +71,10 @@ class KMeans:
                 self.labs[i] = dis.argmin()
             stable = True
             for i in range(self.k):
+                if i not in self.labs:
+                    continue
                 mean = np.mean(X[self.labs == i], axis=0)
-                if any(self.centroids[i] != mean) and (not np.isnan(mean).any()):
+                if any(self.centroids[i] != mean):
                     self.centroids[i] = mean
                     stable = False
             if stable:
@@ -88,14 +93,24 @@ class KMeans:
         wss = 0
         for i in range(self.k):
             wss += np.sum(
-                np.sum(np.abs(self.X[self.labs == 1] - self.centroids[i]) ** 2, axis=1)
+                np.sum((self.X[self.labs == i] - self.centroids[i]) ** 2, axis=1)
             )
         return wss
 
 
 group, labs = create_data()
-km = KMeans(k=10)
+km = KMeans()
+wss = []
+for k in range(2, 15):
+    km.k = k
+    km.fit(group, method=0)
+    w = km.wss()
+    print(km.wss())
+    wss.append(w)
+print(wss)
 
-# km.fit(group, rand=False)
-km.fit(group)
-print(km.wss())
+plt.figure(0)
+plt.plot(range(2, len(wss) + 2), wss)
+plt.xlabel("K")
+plt.ylabel("WSS")
+plt.show()
