@@ -45,22 +45,36 @@ class KMeans:
         self.k = k
         self.t = t
 
-    def fit(self, X):
-        self.X = X
+    def fit(self, X, rand=True):
+        m = np.shape(X)[0]
         n = np.shape(X)[1]
-        self.labs = np.zeros(np.shape(X)[0])
+        if self.k >= m:
+            print(f"warning: k({self.k}) >= m({m})")
+        self.X = X
+        self.labs = np.zeros(m)
         self.centroids = np.zeros((self.k, n))
+
         for j in range(n):
             minJ = min(X[:, j])
             rangeJ = float(max(X[:, j]) - minJ)
-            self.centroids[:, j] = np.array(minJ + rangeJ * np.random.rand(self.k))
+            if rand:
+                self.centroids[:, j] = np.array(minJ + rangeJ * np.random.rand(self.k))
+            else:
+                self.centroids[:, j] = np.arange(minJ, minJ + rangeJ, rangeJ / self.k)
 
         for t in range(self.t):
             for i, x in enumerate(X):
                 dis = distance(x, self.centroids, axis=1)
                 self.labs[i] = dis.argmin()
+            stable = True
             for i in range(self.k):
-                self.centroids = np.mean(X[self.labs == i], axis=0)
+                mean = np.mean(X[self.labs == i], axis=0)
+                if any(self.centroids[i] != mean) and (not np.isnan(mean).any()):
+                    self.centroids[i] = mean
+                    stable = False
+            if stable:
+                break
+
         return self.centroids, self.labs
 
     def predit(self, X):
@@ -80,7 +94,8 @@ class KMeans:
 
 
 group, labs = create_data()
+km = KMeans(k=10)
 
-km = KMeans()
+# km.fit(group, rand=False)
 km.fit(group)
 print(km.wss())
