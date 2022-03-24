@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
+from lab2.lab2_2 import KNN
+
 INF = 0
 
 
@@ -35,41 +37,52 @@ def create_data():
     return x_train, y_train, x_test, y_test
 
 
-def distance(x1, x2, p):
+def distance(x1, x2, p=2, axis=0):
     if p == INF:
         return np.max(x1 - x2)
-    return np.sum(np.abs((x1 - x2)) ** p) ** (1 / p)
+    return np.sum(np.abs(x1 - x2) ** p, axis=axis) ** (1 / p)
 
 
-def randCent(dataSet, k):
-    n = np.shape(dataSet)[1]
-    centroids = np.mat(np.zeros((k, n)))  # create centroid mat
-    for j in range(n):  # create random cluster centers, within bounds of each dimension
-        minJ = min(dataSet[:, j])
-        rangeJ = float(max(dataSet[:, j]) - minJ)
-        centroids[:, j] = np.mat(minJ + rangeJ * np.random.rand(k, 1))
-    return centroids
-
-
-class KNN:
-    def __init__(self, k=5, p=2) -> None:
+class KMeans:
+    def __init__(self, k=2, t=10) -> None:
         self.k = k
-        self.p = p
+        self.t = t
 
-    def fit(self, x_train, y_train):
-        self.x_train = x_train
-        self.y_train = y_train
+    def fit(self, X):
+        self.X = X
+        n = np.shape(X)[1]
+        self.labs = np.zeros(n)
+        self.centroids = np.zeros((self.k, n))
+        for j in range(n):
+            minJ = min(X[:, j])
+            rangeJ = float(max(X[:, j]) - minJ)
+            self.centroids[:, j] = np.array(minJ + rangeJ * np.random.rand(self.k, 1))
 
-    def predit(self, x):
-        dists = [distance(x, np.array(x_x_train), self.p) for x_x_train in self.x_train]
-        k_indices = np.argsort(dists)[: self.k]
-        k_labs = [self.y_train[i] for i in k_indices]
-        most = Counter(k_labs).most_common(1)
-        return most
+        for t in range(self.t):
+            for i, x in enumerate(X):
+                dis = distance(x, self.centroids, axis=1)
+                self.labs[i] = dis.argmin()
+            for i in range(self.k):
+                self.centroids = np.mean(X[self.labs == i], axis=0)
+        return self.centroids, self.labs
 
-    def score(self, x_test, y_test):
-        cnt = 0
-        for x, y in zip(x_test, y_test):
-            if self.predit(x)[0][0] == y:
-                cnt += 1
-        return cnt / len(x_test)
+    def predit(self, X):
+        labs = np.zeros(np.shape(X)[0])
+        for i, x in enumerate(X):
+            dis = distance(x, self.centroids, axis=1)
+            labs[i] = dis.argmin()
+        return labs
+    
+    def wss(self):
+        wss = np.zeros(self.k)
+
+        for i in range(self.k):
+            # dis = distance(self.centroids[i], X[self.labs == i], axis=1)
+
+            
+        for i, x in enumerate(X):
+            labs[i] = dis.argmin()
+
+km = KMeans
+
+_,res = 
