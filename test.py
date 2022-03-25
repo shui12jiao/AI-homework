@@ -89,7 +89,7 @@ wss.append(w)
 print(wss)
 
 plt.figure(0)
-plt.scatter(km.X[:, 2], km.X[:, 3], km.labs, cmap="brg")
+plt.scatter(km.X[:, 2], km.X[:, 3], c=km.labs, cmap="brg")
 plt.xlabel("Petal.Length")
 plt.ylabel("Petal.Width")
 plt.show()
