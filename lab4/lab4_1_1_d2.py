@@ -27,12 +27,14 @@ def show_accuracy(y_hat, y_test, param):
 
 
 def laplace(X, Y):
-    return np.dot(X, Y.T)
-    # for j in range(m):
-    #     deltaRow = X[j, :] - A
-    #     K[j] = deltaRow * deltaRow.T
-    #     K[j] = sqrt(K[j])
-    # K = exp(-K / kTup[1])
+    pass
+    # np.exp(-np.abs)
+    # return np.dot(X, Y.T)
+    # # for j in range(m):
+    # #     deltaRow = X[j, :] - A
+    # #     K[j] = deltaRow * deltaRow.T
+    # #     K[j] = sqrt(K[j])
+    # # K = exp(-K / kTup[1])
 
 
 def draw(x, s):
