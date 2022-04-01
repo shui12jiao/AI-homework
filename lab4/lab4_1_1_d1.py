@@ -176,7 +176,7 @@ def testRbf(k1=1.3):
 
 class entity:
     # Initialize the structure with the parameters
-    def __init__(self, dataMatIn, classLabels, C, toler, kTup):
+    def __init__(self, dataMatIn, classLabels, C, toler, kTup=("linear", 0)):
         self.X = dataMatIn
         self.labelMat = classLabels
         self.C = C
@@ -260,7 +260,7 @@ class SMO:
     def __clipAlpha(self, aj, H, L):
         if aj > H:
             aj = H
-        if L > aj:
+        if aj < L:
             aj = L
         return aj
 
@@ -295,7 +295,7 @@ class SMO:
         else:  # in this case (first time around) we don't have any valid eCache values
             j = self.__selectJrand(i, self.ent.m)
             Ej = self.__calcEk(j)
-            return j, Ej
+        return j, Ej
 
     # 更新误差
     def __updateEk(self, k):
@@ -390,7 +390,7 @@ class SVM:
         res = empty(m)
         for i in range(m):
             tmp = float(x[i, :] * wt) + self.ent.b
-            if tmp > 0:
+            if tmp >= 0:
                 res[i] = 1
             else:
                 res[i] = -1
@@ -427,29 +427,24 @@ if __name__ == "__main__":
     x_train, y_train, x_test, y_test, x, y = create_data()
     # x_train, y_train = loadDataSet("testSetRBF.txt")
 
-    ent = entity(x_train, y_train, 200, 0.0001, ("rbf", 1.3))
+    ent = entity(x_train, y_train, 77, 0.00001, ("linear", 1))
 
     svmCase = SVM(ent)
     svmCase.fit()
 
-    print(
-        "W:",
-        svmCase.w,
-        "\nAlphas:\n",
-        svmCase.ent.alphas,
-    )
+    # print("W:", svmCase.w, "\nAlphas:\n", svmCase.ent.alphas)
 
-    print(
-        "训练集",
-        svmCase.score(x_train, y_train),
-        svmCase.predict(x_train),
-    )
+    # print(
+    #     "训练集",
+    #     svmCase.score(x_train, y_train),
+    #     svmCase.predict(x_train),
+    # )
 
-    print(
-        "测试集",
-        svmCase.score(x_test, y_test),
-        svmCase.predict(x_test),
-    )
-    # draw(x, svmCase)
+    # print(
+    #     "测试集",
+    #     svmCase.score(x_test, y_test),
+    #     svmCase.predict(x_test),
+    # )
+    draw(x, svmCase)
 
     # plot_point("testSetRBF.txt", svmCase.ent.alphas, svmCase.ent.X)

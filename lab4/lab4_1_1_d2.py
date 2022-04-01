@@ -136,4 +136,4 @@ print(
     svmCase.score(x_test, y_test),
     svmCase.predict(x_test),
 )
-# draw(x, svmCase)
+draw(x, svmCase)
