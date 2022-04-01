@@ -16,10 +16,35 @@ def iris_type(s):
 def create_data():
     data = load_iris().data[:, :2]
     target = load_iris().target
+
+    index = np.array([], dtype=int)
+    for i in range(np.shape(target)[0]):
+        if target[i] == 2:
+            index = np.append(index, i)
+        elif target[i] == 0:
+            target[i] = -1
+    data = np.delete(data, index, 0)
+    target = np.delete(target, index, 0)
     x_train, x_test, y_train, y_test = train_test_split(
         data, target, random_state=1, train_size=0.6
     )
-    return x_train, y_train, x_test, y_test, data, target
+    return (
+        x_train,
+        y_train,
+        x_test,
+        y_test,
+        data,
+        target,
+    )
+
+
+# def create_data():
+#     data = load_iris().data[:, :2]
+#     target = load_iris().target
+#     x_train, x_test, y_train, y_test = train_test_split(
+#         data, target, random_state=1, train_size=0.6
+#     )
+#     return x_train, y_train, x_test, y_test, data, target
 
 
 def show_accuracy(y_hat, y_test, param):
@@ -80,10 +105,6 @@ class SVM:
         )
         self.clf.fit(x_train, y_train)
 
-    def fit_score(self):
-        self.y_hat = self.clf.predict(x_train)
-        return self.clf.score(x_train, y_train), self.y_hat
-
     def predict(self, x_test):
         return self.clf.predict(x_test)
 
@@ -96,7 +117,20 @@ kernels = ("linear", "poly", "rbf", "sigmoid", laplace)  # 线性、多项式、
 
 svmCase = SVM()
 svmCase.fit(x_train, y_train, kernel=kernels[2])
-print("训练集：", svmCase.fit_score())
+
+# print(
+#     "W:",
+#     svmCase.w,
+#     "\nAlphas:\n",
+#     svmCase.ent.alphas,
+# )
+
+print(
+    "测试集",
+    svmCase.score(x_train, y_train),
+    svmCase.predict(x_train),
+)
+
 print(
     "测试集",
     svmCase.score(x_test, y_test),
