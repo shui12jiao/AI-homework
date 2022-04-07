@@ -1,4 +1,5 @@
 from pydoc import cram
+from re import X
 from sklearn import svm
 from numpy import *
 import matplotlib.pyplot as plt
@@ -23,13 +24,25 @@ def trainingDigits():
             img[32 * i + j] = int(line[j])
         return img
 
-    for f in fileList[0:393]:
+    for f in fileList[0:20] + fileList[230:250]:
         y.append(int(f[0]))
         x.append(read_img("lab4/trainingDigits/" + f))
+    # return np.array(x).reshape((len(x), 1024)), np.array(y).reshape((len(x), 1024))
+    x, y = array(x), array(y)
     for i, v in enumerate(y):
         if v == 0:
             y[i] = -1
-    return mat(x).reshape(393, 1024), mat(y).reshape(393, 1)
+    x_train, x_test, y_train, y_test = train_test_split(
+        x, y, random_state=1, train_size=0.6
+    )
+    return (
+        mat(x_train),
+        mat(y_train).transpose(),
+        mat(x_test),
+        mat(y_test).transpose(),
+        mat(x),
+        mat(y),
+    )
 
 
 def create_data_(fileName):
@@ -426,32 +439,33 @@ class SVM:
 # 总体运行
 if __name__ == "__main__":
     # testRbf()
-    kernels = ("linear", "poly", "rbf", "sigmoid", "laplace")  # 线性、多项式、高斯、Sigmoid、
+    kernels = ("linear", "poly", "rbf", "laplace", "sigmoid")  # 线性、多项式、高斯、Sigmoid、
     # x_train, y_train, x_test, y_test, x, y = create_data()
     # x_train, y_train, x_test, y_test, x, y = create_data_("lab4/testSetRBF2.txt")
 
-    x_train, y_train = trainingDigits()
-    x_test, y_test = x_train, y_train
-    x, y = x_train, y_train
-
-    ent = entity(x_train, y_train, 2, 0.0001, ("linear", 5))
-
-    svmCase = SVM(ent)
-    svmCase.fit()
+    x_train, y_train, x_test, y_test, x, y = trainingDigits()
 
     # print("W:", svmCase.w, "\nAlphas:\n", svmCase.ent.alphas)
 
-    print(
-        "训练集",
-        svmCase.score(x_train, y_train),
-        svmCase.predict(x_train),
-    )
+    for i in range(4):
+        ent = entity(x_train, y_train, 2, 0.0001, (kernels[i], 5))
+        svmCase = SVM(ent)
+        svmCase.fit()
+        print(kernels[i])
+        print(
+            "训练集精度：",
+            svmCase.score(x_train, y_train),
+            # svmCase.predict(x_train),
+        )
 
-    # print(
-    #     "测试集",
-    #     svmCase.score(x_test, y_test),
-    #     svmCase.predict(x_test),
-    # )
-    draw(x, svmCase, "X", "Y", "trainingDigits")
+        print(
+            "测试集精度：",
+            svmCase.score(x_test, y_test),
+            # svmCase.predict(x_test),
+        )
 
-    # plot_point("testSetRBF.txt", svmCase.ent.alphas, svmCase.ent.X)
+        # print(
+        #     "样本集精度：",
+        #     svmCase.score(x, y),
+        #     # svmCase.predict(x_test),
+        # )
