@@ -6,7 +6,7 @@ import matplotlib as mpl
 from matplotlib import colors
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_iris
-import os
+import os, math
 
 
 def trainingDigits():
@@ -15,18 +15,19 @@ def trainingDigits():
     x, y = [], []
 
     def read_img(filename):
-        img = np.zeros((1, 1024))
+        img = np.zeros(1024)
         fr = open(filename)
         for i in range(32):
-            lineStr = fr.readline()
+            line = fr.readline()
         for j in range(32):
-            img[0, 32 * i + j] = int(lineStr[j])
+            img[32 * i + j] = int(line[j])
         return img
 
     for i, f in enumerate(fileList):
         y.append(f[0])
         x.append(read_img("lab4/trainingDigits/" + f))
-    return np.array(x).reshape((len(x), 1024)), np.array(y).reshape((len(x), 1024))
+    # return np.array(x).reshape((len(x), 1024)), np.array(y).reshape((len(x), 1024))
+    return np.array(x), np.array(y)
 
 
 def create_data():
@@ -59,20 +60,17 @@ def show_accuracy(y_hat, y_test, param):
 
 
 def laplace(X, Y):
-    pass
-    # np.exp(-np.abs)
-    # return np.dot(X, Y.T)
-    # # for j in range(m):
-    # #     deltaRow = X[j, :] - A
-    # #     K[j] = deltaRow * deltaRow.T
-    # #     K[j] = sqrt(K[j])
-    # # K = exp(-K / kTup[1])
+    K = np.zeros((len(X), len(Y)), dtype=np.float)
+    for i in range(len(X)):
+        for j in range(len(Y)):
+            K[i][j] = math.exp(-math.sqrt(np.dot(X[i] - Y[j], (X[i] - Y[j]).T)) / 2)
+    return K
 
 
 def draw(x, s):
     # 可以通过修改 kernel 参数来实现不同核函数的验证
-    print("decision_function:\n", s.clf.decision_function(s.x_train))
-    print("\npredict:\n", s.clf.predict(s.x_train))
+    # print("decision_function:\n", s.clf.decision_function(s.x_train))
+    # print("\npredict:\n", s.clf.predict(s.x_train))
     x1_min, x1_max = x[:, 0].min(), x[:, 0].max()  # 第 0 列的范围
     x2_min, x2_max = x[:, 1].min(), x[:, 1].max()  # 第 1 列的范围
     x1, x2 = np.mgrid[x1_min:x1_max:200j, x2_min:x2_max:200j]  # 生成网格采样点
@@ -121,27 +119,16 @@ class SVM:
 
 # x_train, y_train, x_test, y_test, x, y = create_data()
 x_train, y_train = trainingDigits()
+x = x_train
 kernels = ("linear", "poly", "rbf", "sigmoid", laplace)  # 线性、多项式、高斯、Sigmoid、
 
 svmCase = SVM()
 svmCase.fit(x_train, y_train, kernel=kernels[2])
 
-# print(
-#     "W:",
-#     svmCase.w,
-#     "\nAlphas:\n",
-#     svmCase.ent.alphas,
-# )
-
 print(
-    "测试集",
+    "训练集",
     svmCase.score(x_train, y_train),
-    svmCase.predict(x_train),
+    # svmCase.predict(x_train),
 )
 
-print(
-    "测试集",
-    svmCase.score(x_test, y_test),
-    svmCase.predict(x_test),
-)
-draw(x, svmCase)
+# draw(x, svmCase)
