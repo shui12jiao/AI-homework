@@ -6,11 +6,28 @@ import matplotlib as mpl
 from matplotlib import colors
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_iris
+import os
 
 
-def iris_type(s):
-    it = {"Iris-setosa": 0, "Iris-versicolor": 1, "Iris-virginica": 2}
-    return it[s]
+def trainingDigits():
+    fileList = os.listdir("lab4/trainingDigits")
+    length = len(fileList)
+    x = np.zeros((1, length))
+    y = np.zeros((1, length))
+
+    def read_img(filename):
+        img = np.zeros((1, 1024))
+        fr = open(filename)
+        for i in range(32):
+            lineStr = fr.readline()
+        for j in range(32):
+            img[0, 32 * i + j] = int(lineStr[j])
+        return img
+
+    for i, f in enumerate(fileList):
+        y[i] = f[0]
+        x[i] = read_img("lab4/trainingDigits/" + f)
+    return x, y
 
 
 def create_data():
@@ -36,15 +53,6 @@ def create_data():
         data,
         target,
     )
-
-
-# def create_data():
-#     data = load_iris().data[:, :2]
-#     target = load_iris().target
-#     x_train, x_test, y_train, y_test = train_test_split(
-#         data, target, random_state=1, train_size=0.6
-#     )
-#     return x_train, y_train, x_test, y_test, data, target
 
 
 def show_accuracy(y_hat, y_test, param):
@@ -112,7 +120,8 @@ class SVM:
         return self.clf.score(x_test, y_test)
 
 
-x_train, y_train, x_test, y_test, x, y = create_data()
+# x_train, y_train, x_test, y_test, x, y = create_data()
+x_train, y_train = trainingDigits()
 kernels = ("linear", "poly", "rbf", "sigmoid", laplace)  # 线性、多项式、高斯、Sigmoid、
 
 svmCase = SVM()

@@ -30,11 +30,6 @@ def create_data_(fileName):
     )
 
 
-def iris_type(s):
-    it = {"Iris-setosa": 0, "Iris-versicolor": 1, "Iris-virginica": 2}
-    return it[s]
-
-
 def create_data():
     data = load_iris().data[:, :2]
     target = load_iris().target
@@ -155,34 +150,6 @@ def plot_point(filename, alphas, dataMat):
                 edgecolor="red",
             )
     plt.show()
-
-
-# 测试，可以选取不同核函数查看不同核函数下支持向量机的性能。
-def testRbf(k1=1.3):
-    datMat, labelMat = loadDataSet("testSetRBF.txt")
-    ent = entity(datMat, labelMat, 200, 0.0001, ("rbf", k1))
-    b, alphas = SMO(ent).smop()
-    svInd = nonzero(alphas.A > 0)[0]
-    sVs = datMat[svInd]
-    labelSV = labelMat[svInd, :]
-    print("there are %d Support Vectors" % shape(sVs)[0])
-    m, n = shape(datMat)
-    errorCount = 0
-    for i in range(m):
-        kernelEval = kernelTrans(sVs, datMat[i, :], ("rbf", k1))
-        predict = kernelEval.T * multiply(labelSV, alphas[svInd]) + b
-        if any(sign(predict) != sign(labelMat.getA()[i])):
-            errorCount += 1
-    print("the training error rate is: %f" % (float(errorCount) / m))
-    datMat, labelMat = loadDataSet("testSetRBF2.txt")
-    errorCount = 0
-    m, n = shape(datMat)
-    for i in range(m):
-        kernelEval = kernelTrans(sVs, datMat[i, :], ("rbf", k1))
-        predict = kernelEval.T * multiply(labelSV, alphas[svInd]) + b
-        if sign(float(predict)) != sign(labelMat.getA()[i]):
-            errorCount += 1
-    print("the test error rate is: %f" % (float(errorCount) / m))
 
 
 class entity:
