@@ -23,11 +23,44 @@ def trainingDigits():
             img[32 * i + j] = int(line[j])
         return img
 
-    for i, f in enumerate(fileList):
-        y.append(f[0])
+    for f in fileList[0:393]:
+        y.append(int(f[0]))
         x.append(read_img("lab4/trainingDigits/" + f))
     # return np.array(x).reshape((len(x), 1024)), np.array(y).reshape((len(x), 1024))
-    return np.array(x), np.array(y)
+    x, y = np.array(x), np.array(y)
+    x_train, x_test, y_train, y_test = train_test_split(
+        x, y, random_state=1, train_size=0.6
+    )
+    return (
+        x_train,
+        y_train,
+        x_test,
+        y_test,
+        x,
+        y,
+    )
+
+
+def create_data_(fileName):
+    dataMat = []
+    labelMat = []
+    fr = open(fileName)
+    for line in fr.readlines():
+        lineArr = line.strip().split("\t")
+        dataMat.append([float(lineArr[0]), float(lineArr[1])])
+        labelMat.append(float(lineArr[2]))
+
+    x_train, x_test, y_train, y_test = train_test_split(
+        dataMat, labelMat, random_state=1, train_size=0.6
+    )
+    return (
+        np.array(x_train),
+        np.array(y_train).transpose(),
+        np.array(x_test),
+        np.array(y_test).transpose(),
+        np.array(dataMat),
+        np.array(labelMat),
+    )
 
 
 def create_data():
@@ -67,7 +100,7 @@ def laplace(X, Y):
     return K
 
 
-def draw(x, s):
+def draw(x, s, xname, yname, topic):
     # 可以通过修改 kernel 参数来实现不同核函数的验证
     # print("decision_function:\n", s.clf.decision_function(s.x_train))
     # print("\npredict:\n", s.clf.predict(s.x_train))
@@ -88,13 +121,13 @@ def draw(x, s):
     # plt.scatter(x[:, 0], x[:, 1], c=y, edgecolors='k', s=50, cmap=cm_dark) # 样本
     plt.plot(x[:, 0], x[:, 1], "o", alpha=alpha, color="blue", markeredgecolor="k")
     plt.scatter(
-        x_test[:, 0], x_test[:, 1], s=120, facecolors="none", zorder=10
+        x_train[:, 0], x_train[:, 1], s=120, facecolors="none", zorder=10
     )  # 圈中测试集样本
-    plt.xlabel("花萼长度", fontsize=13)
-    plt.ylabel("花萼宽度", fontsize=13)
+    plt.xlabel(xname, fontsize=13)
+    plt.ylabel(yname, fontsize=13)
     plt.xlim(x1_min, x1_max)
     plt.ylim(x2_min, x2_max)
-    plt.title("鸢尾花 SVM 二特征分类", fontsize=15)
+    plt.title(topic, fontsize=15)
     plt.show()
 
 
@@ -117,18 +150,26 @@ class SVM:
         return self.clf.score(x_test, y_test)
 
 
+x_train, y_train, x_test, y_test, x, y = trainingDigits()
 # x_train, y_train, x_test, y_test, x, y = create_data()
-x_train, y_train = trainingDigits()
-x = x_train
+# x_train, y_train, x_test, y_test, x, y = create_data_("lab4/testSetRBF.txt")
 kernels = ("linear", "poly", "rbf", "sigmoid", laplace)  # 线性、多项式、高斯、Sigmoid、
 
 svmCase = SVM()
-svmCase.fit(x_train, y_train, kernel=kernels[2])
 
-print(
-    "训练集",
-    svmCase.score(x_train, y_train),
-    # svmCase.predict(x_train),
-)
+for i in range(0, 4):
+    print(kernels[i])
+    svmCase.fit(x_train, y_train, kernel=kernels[i])
 
-# draw(x, svmCase)
+    print(
+        "训练集精度：",
+        svmCase.score(x_train, y_train),
+        # svmCase.predict(x_train),
+    )
+    print(
+        "测试集精度：",
+        svmCase.score(x_test, y_test),
+        # svmCase.predict(x_train),
+    )
+    # draw(x, svmCase, "0", "1", "trainingDigits")
+    # draw(x, svmCase, "X", "Y", "testSetRBF.txt")

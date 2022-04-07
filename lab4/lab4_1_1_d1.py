@@ -6,6 +6,30 @@ import matplotlib as mpl
 from matplotlib import colors
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_iris
+import os
+
+
+def trainingDigits():
+    fileList = os.listdir("lab4/trainingDigits")
+    length = len(fileList)
+    x, y = [], []
+
+    def read_img(filename):
+        img = zeros(1024)
+        fr = open(filename)
+        for i in range(32):
+            line = fr.readline()
+        for j in range(32):
+            img[32 * i + j] = int(line[j])
+        return img
+
+    for f in fileList[0:393]:
+        y.append(int(f[0]))
+        x.append(read_img("lab4/trainingDigits/" + f))
+    for i, v in enumerate(y):
+        if v == 0:
+            y[i] = -1
+    return mat(x).reshape(393, 1024), mat(y).reshape(393, 1)
 
 
 def create_data_(fileName):
@@ -89,7 +113,7 @@ def show_accuracy(y_hat, y_test, param):
     pass
 
 
-def draw(x, s):
+def draw(x, s, xname, yname, topic):
     # 可以通过修改 kernel 参数来实现不同核函数的验证
     # print("decision_function:\n", s.decision_function(s.x_train))
     # print("\npredict:\n", s.predict(s.x_train))
@@ -106,16 +130,20 @@ def draw(x, s):
     grid_hat = grid_hat.reshape(x1.shape)  # 使之与输入的形状相同
     alpha = 0.5
     plt.pcolormesh(x1, x2, grid_hat, cmap=cm_light)  # 预测值的显示
-    # plt.scatter(x[:, 0], x[:, 1], c=y, edgecolors='k', s=50, cmap=cm_dark) # 样本
-    plt.plot(x[:, 0], x[:, 1], "o", alpha=alpha, color="blue", markeredgecolor="k")
+    plt.scatter(x[:, 0], x[:, 1], c=y, edgecolors="k", s=50, cmap=cm_dark)  # 样本
     plt.scatter(
-        array(x_test)[:, 0], array(x_test)[:, 1], s=120, facecolors="none", zorder=10
+        # array(x_test)[:, 0], array(x_test)[:, 1], s=120, facecolors="none", zorder=10
+        array(x_train)[:, 0],
+        array(x_train)[:, 1],
+        s=120,
+        facecolors="none",
+        zorder=10,
     )  # 圈中测试集样本
-    plt.xlabel("花萼长度", fontsize=13)
-    plt.ylabel("花萼宽度", fontsize=13)
+    plt.xlabel(xname, fontsize=13)
+    plt.ylabel(yname, fontsize=13)
     plt.xlim(x1_min, x1_max)
     plt.ylim(x2_min, x2_max)
-    plt.title("鸢尾花 SVM 二特征分类", fontsize=15)
+    plt.title(topic, fontsize=15)
     plt.show()
 
 
@@ -160,6 +188,7 @@ class entity:
         self.C = C
         self.tol = toler
         self.m = shape(dataMatIn)[0]
+        self.n = shape(dataMatIn)[1]
         self.alphas = mat(zeros((self.m, 1)))
         self.b = 0
         self.eCache = mat(zeros((self.m, 2)))  # first column is valid flag
@@ -240,7 +269,7 @@ class SMO:
 
     # #这里根据公式 E = f(xi) - yi ，负责计算误差 E
     def __calcEk(self, k):
-        fXk = float(
+        fXk = mat(
             multiply(self.ent.alphas, self.ent.labelMat).T * self.ent.K[:, k]
             + self.ent.b
         )
@@ -398,10 +427,14 @@ class SVM:
 if __name__ == "__main__":
     # testRbf()
     kernels = ("linear", "poly", "rbf", "sigmoid", "laplace")  # 线性、多项式、高斯、Sigmoid、
-    x_train, y_train, x_test, y_test, x, y = create_data()
-    x_train, y_train, x_test, y_test, x, y = create_data_("lab4/testSetRBF.txt")
+    # x_train, y_train, x_test, y_test, x, y = create_data()
+    # x_train, y_train, x_test, y_test, x, y = create_data_("lab4/testSetRBF2.txt")
 
-    ent = entity(x_train, y_train, 77, 0.00001, ("linear", 1))
+    x_train, y_train = trainingDigits()
+    x_test, y_test = x_train, y_train
+    x, y = x_train, y_train
+
+    ent = entity(x_train, y_train, 2, 0.0001, ("linear", 5))
 
     svmCase = SVM(ent)
     svmCase.fit()
@@ -414,11 +447,11 @@ if __name__ == "__main__":
         svmCase.predict(x_train),
     )
 
-    print(
-        "测试集",
-        svmCase.score(x_test, y_test),
-        svmCase.predict(x_test),
-    )
-    draw(x, svmCase)
+    # print(
+    #     "测试集",
+    #     svmCase.score(x_test, y_test),
+    #     svmCase.predict(x_test),
+    # )
+    draw(x, svmCase, "X", "Y", "trainingDigits")
 
     # plot_point("testSetRBF.txt", svmCase.ent.alphas, svmCase.ent.X)
