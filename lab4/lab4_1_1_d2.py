@@ -12,8 +12,7 @@ import os
 def trainingDigits():
     fileList = os.listdir("lab4/trainingDigits")
     length = len(fileList)
-    x = np.zeros((1, length))
-    y = np.zeros((1, length))
+    x, y = [], []
 
     def read_img(filename):
         img = np.zeros((1, 1024))
@@ -25,9 +24,9 @@ def trainingDigits():
         return img
 
     for i, f in enumerate(fileList):
-        y[i] = f[0]
-        x[i] = read_img("lab4/trainingDigits/" + f)
-    return x, y
+        y.append(f[0])
+        x.append(read_img("lab4/trainingDigits/" + f))
+    return np.array(x).reshape((len(x), 1024)), np.array(y).reshape((len(x), 1024))
 
 
 def create_data():
