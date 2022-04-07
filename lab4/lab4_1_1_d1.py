@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_iris
 
 
-def loadDataSet(fileName):
+def create_data_(fileName):
     dataMat = []
     labelMat = []
     fr = open(fileName)
@@ -16,7 +16,18 @@ def loadDataSet(fileName):
         lineArr = line.strip().split("\t")
         dataMat.append([float(lineArr[0]), float(lineArr[1])])
         labelMat.append(float(lineArr[2]))
-    return mat(dataMat), mat(labelMat).transpose()
+
+    x_train, x_test, y_train, y_test = train_test_split(
+        dataMat, labelMat, random_state=1, train_size=0.6
+    )
+    return (
+        mat(x_train),
+        mat(y_train).transpose(),
+        mat(x_test),
+        mat(y_test).transpose(),
+        mat(dataMat),
+        mat(labelMat),
+    )
 
 
 def iris_type(s):
@@ -196,10 +207,6 @@ class SMO:
         self.maxIter = maxIter
         self.ent = entity
 
-    # SMO 算法主体部分，输入包括数据集，标签，松弛因子，容忍度，最大迭代数与核参数。
-    # 请同学们自行完成此部分
-    # def smoP(dataMatIn, classLabels, C, toler, maxIter, kTup=("rbf", 1.3)):
-    # return self.ent.b, self.ent.alphas  # 返回值为 alpha 和截距 b
     def smop(self):
         iter = 0
         entireSet = True
@@ -335,7 +342,7 @@ class SMO:
             self.__updateEk(j)
             # 比对原值，看变化是否明显，如果优化并不明显则退出
             if abs(self.ent.alphas[j] - alphaJold) < 1e-5:
-                print("j not moving enough")
+                # print("j not moving enough")
                 return 0
             self.ent.alphas[i] += (
                 self.ent.labelMat[j]
@@ -416,7 +423,7 @@ class SVM:
         sum = 0
         for i in range(shape(dataMat)[0]):
             sum += multiply(alphas[i] * labelMat[i], dataMat[i, :].T)
-        print(sum)
+        # print(sum)
         return sum
 
 
@@ -425,7 +432,7 @@ if __name__ == "__main__":
     # testRbf()
     kernels = ("linear", "poly", "rbf", "sigmoid", "laplace")  # 线性、多项式、高斯、Sigmoid、
     x_train, y_train, x_test, y_test, x, y = create_data()
-    # x_train, y_train = loadDataSet("testSetRBF.txt")
+    x_train, y_train, x_test, y_test, x, y = create_data_("lab4/testSetRBF.txt")
 
     ent = entity(x_train, y_train, 77, 0.00001, ("linear", 1))
 
@@ -434,17 +441,17 @@ if __name__ == "__main__":
 
     # print("W:", svmCase.w, "\nAlphas:\n", svmCase.ent.alphas)
 
-    # print(
-    #     "训练集",
-    #     svmCase.score(x_train, y_train),
-    #     svmCase.predict(x_train),
-    # )
+    print(
+        "训练集",
+        svmCase.score(x_train, y_train),
+        svmCase.predict(x_train),
+    )
 
-    # print(
-    #     "测试集",
-    #     svmCase.score(x_test, y_test),
-    #     svmCase.predict(x_test),
-    # )
+    print(
+        "测试集",
+        svmCase.score(x_test, y_test),
+        svmCase.predict(x_test),
+    )
     draw(x, svmCase)
 
     # plot_point("testSetRBF.txt", svmCase.ent.alphas, svmCase.ent.X)
