@@ -5,17 +5,14 @@ from numpy import *
 
 # 函数说明：计算给定数据集的经验熵（香农熵）  Parameters：dataSet：数据集  Returns：shannonEnt：经验熵
 def calcShannonEnt(dataSet):
-    p = zeros(4)
     num = shape(dataSet)[0]
-    for i in range(1,4):
-        p[i] = sum(dataSet[-1]==i)/num
-        # TODO
-    for i in range(1,4):
-        
-
-    labels
-    pass
-
+    type = unique(dataSet[:, -1])
+    p = {}
+    for i in type:
+        p[i] = sum(dataSet[:, -1] == i) / num
+    shannonEnt = 0
+    for i in type:
+        shannonEnt -= p[i] * log2(p[i])
     return shannonEnt  # 返回经验熵
 
 
@@ -47,7 +44,7 @@ def chooseBestFeatureToSplit(dataSet):
     return bestFeature
 
 
-# 函数说明：统计 classList 中出现次数最多的元素（类标签）  Parameters： classList：类标签列表  Returns： sortedClassCount[0][0]：出现次数最多的元素（类标签）
+# 函数说明：统计 classList 中出现次数最多的元素（类标签）  Parameters：classList：类标签列表  Returns：sortedClassCount[0][0]：出现次数最多的元素（类标签）
 def majorityCnt(classList):
     classCount = {}
     # 统计 classList 中每个元素出现的次数
@@ -62,12 +59,12 @@ def majorityCnt(classList):
     return sortedClassCount[0][0]
 
 
-# 函数说明：创建决策树  Parameters: dataSet：训练数据集 labels：分类属性标签 featLabels：存储选择的最优特征标签  Returns： myTree：决策树
+# 函数说明：创建决策树  Parameters: dataSet：训练数据集 labels：分类属性标签 featLabels：存储选择的最优特征标签  Returns：myTree：决策树
 def createTree(dataSet, labels, featLabels):
     return myTree
 
 
-# 函数说明：获取决策树叶子节点的数目 Parameters：myTree：决策树  Returns： numLeafs：决策树的叶子节点的数目
+# 函数说明：获取决策树叶子节点的数目  Parameters：myTree：决策树  Returns：numLeafs：决策树的叶子节点的数目
 def getNumLeafs(myTree):
     numLeafs = 0
     firstStr = next(iter(myTree))
@@ -80,7 +77,7 @@ def getNumLeafs(myTree):
     return numLeafs
 
 
-# 函数说明:获取决策树的层数 Parameters: myTree:决策树  Returns: maxDepth:决策树的层数
+# 函数说明:获取决策树的层数  Parameters: myTree:决策树  Returns: maxDepth:决策树的层数
 def getTreeDepth(myTree):
     maxDepth = 0  # 初始化决策树深度
     firstStr = next(
@@ -97,7 +94,7 @@ def getTreeDepth(myTree):
     return maxDepth
 
 
-# 函数说明:绘制结点 Parameters: nodeTxt - 结点名 centerPt - 文本位置 parentPt - 标注的箭头位置 nodeType - 结点格式
+# 函数说明:绘制结点  Parameters: nodeTxt - 结点名 centerPt - 文本位置 parentPt - 标注的箭头位置 nodeType - 结点格式
 def plotNode(nodeTxt, centerPt, parentPt, nodeType):
     arrow_args = dict(arrowstyle="<-")  # 定义箭头格式
     font = FontProperties(fname=r"c:\windows\fonts\simsun.ttc", size=14)  # 设置中文字体
@@ -115,14 +112,14 @@ def plotNode(nodeTxt, centerPt, parentPt, nodeType):
     )
 
 
-# 函数说明:标注有向边属性值 Parameters: cntrPt、parentPt - 用于计算标注位置 txtString - 标注的内容
+# 函数说明:标注有向边属性值  Parameters: cntrPt、parentPt - 用于计算标注位置 txtString - 标注的内容
 def plotMidText(cntrPt, parentPt, txtString):
     xMid = (parentPt[0] - cntrPt[0]) / 2.0 + cntrPt[0]  # 计算标注位置
     yMid = (parentPt[1] - cntrPt[1]) / 2.0 + cntrPt[1]
     createPlot.ax1.text(xMid, yMid, txtString, va="center", ha="center", rotation=30)
 
 
-# 函数说明:绘制决策树 Parameters: myTree - 决策树(字典) parentPt - 标注的内容 nodeTxt - 结点名
+# 函数说明:绘制决策树  Parameters: myTree - 决策树(字典) parentPt - 标注的内容 nodeTxt - 结点名
 def plotTree(myTree, parentPt, nodeTxt):
     decisionNode = dict(boxstyle="sawtooth", fc="0.8")  # 设置结点格式
     leafNode = dict(boxstyle="round4", fc="0.8")  # 设置叶结点格式
