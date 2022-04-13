@@ -8,10 +8,9 @@ def calcShannonEnt(dataSet):
     num = shape(dataSet)[0]
     type = unique(dataSet[:, -1])
     p = {}
-    for i in type:
-        p[i] = sum(dataSet[:, -1] == i) / num
     shannonEnt = 0
     for i in type:
+        p[i] = sum(dataSet[:, -1] == i) / num
         shannonEnt -= p[i] * log2(p[i])
     return shannonEnt  # 返回经验熵
 
