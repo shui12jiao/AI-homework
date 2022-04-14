@@ -1,4 +1,5 @@
 import operator
+from re import sub
 from matplotlib.font_manager import FontProperties
 import matplotlib.pyplot as plt
 from numpy import *
@@ -18,11 +19,11 @@ def calcShannonEnt(dataSet):
 
 # 函数说明：创建数据集  Returns：dataSet：数据集 labels：分类属性
 def createDataSet(path):
-    dataMat = []
+    dataSet = []
     fr = open(path)
     for line in fr.readlines():
-        lineArr = line.strip().split("\t")
-        dataMat.append([lineArr[1:].float()])
+        lineArr = array(line.strip().split(), dtype=float)
+        dataSet.append(lineArr[1:])
     labels = [
         "age",
         "spectacle prescription",
@@ -34,30 +35,31 @@ def createDataSet(path):
 
 # 函数说明：按照给定特征划分数据集  Parameters：dataSet:待划分的数据集 axis：划分数据集的特征 value：需要返回的特征值  Returns：返回划分后的数据集
 def splitDataSet(dataSet, axis, value):
-    retDataSet = empty()
-    for vector in dataSet:
-        if vector[axis] == value:
-            append(retDataSet, concatenate(vector[:axis], vector[axis + 1 :]))
+    retDataSet = array([[]])
+    for row in dataSet:
+        if row[axis] == value:
+            print(concatenate(row[:axis], row[axis + 1 :]))
+            append(retDataSet, concatenate(row[:axis], row[axis + 1 :]))
+            # TODO
     return retDataSet
 
 
 def chooseBestFeatureToSplit(dataSet):
-    featNum = shape(dataSet)[1]-1
-    num = shape(dataSet)[0]
-    type = unique(dataSet[:, -1])
+    featNum = shape(dataSet)[1] - 1
     entD = calcShannonEnt(dataSet)
+    gainMax = 0
     bestFeature = -1
 
     for feat in range(featNum):
-        featCol = dataSet[:,feat]
         ent = 0
-        for value in unique(featCol):
-            # TODO
-    
-    
-    # 这里调用 calcShannonEnt 函数来计算熵
-    
-    # 返回信息增益最大特征的索引值
+        for value in unique(dataSet[:, feat]):
+            subDataSet = splitDataSet(dataSet, feat, value)
+            p = shape(subDataSet)[0] / shape(dataSet)[0]
+            ent += p * calcShannonEnt(subDataSet)
+        gain = entD - ent
+        if gain > gainMax:
+            gainMax = gain
+            bestFeature = feat
     return bestFeature
 
 
@@ -78,6 +80,22 @@ def majorityCnt(classList):
 
 # 函数说明：创建决策树  Parameters: dataSet：训练数据集 labels：分类属性标签 featLabels：存储选择的最优特征标签  Returns：myTree：决策树
 def createTree(dataSet, labels, featLabels):
+    classList = dataSet[:, -1]
+    if all(classList[:] == classList[0]):
+        return classList[0]
+    if shape(dataSet)[0] <= 1:
+        return majorityCnt(classList)
+
+    feat = chooseBestFeatureToSplit(dataSet)
+    featLab = labels[feat]
+    append(featLabels, featLab)
+    myTree = {featLab: {}}
+    for value in unique(dataSet[:, feat]):
+        myTree[featLab][value] = createDataSet(
+            splitDataSet(dataSet, feat, value),
+            concatenate(labels[:feat], labels[feat + 1 :]),
+            featLabels,
+        )
     return myTree
 
 
@@ -178,8 +196,8 @@ def createPlot(inTree):
 
 
 if __name__ == "__main__":
-    dataSet, labels = createDataSet()
-    featLabels = []
+    dataSet, labels = createDataSet("lab5/lenses.data")
+    featLabels = array([])
     myTree = createTree(dataSet, labels, featLabels)
     print(myTree)
     createPlot(myTree)
