@@ -35,13 +35,11 @@ def createDataSet(path):
 
 # 函数说明：按照给定特征划分数据集  Parameters：dataSet:待划分的数据集 axis：划分数据集的特征 value：需要返回的特征值  Returns：返回划分后的数据集
 def splitDataSet(dataSet, axis, value):
-    retDataSet = array([[]])
+    retDataSet = []
     for row in dataSet:
         if row[axis] == value:
-            print(concatenate(row[:axis], row[axis + 1 :]))
-            append(retDataSet, concatenate(row[:axis], row[axis + 1 :]))
-            # TODO
-    return retDataSet
+            retDataSet.append(append(row[:axis], row[axis + 1 :]))
+    return array(retDataSet)
 
 
 def chooseBestFeatureToSplit(dataSet):
@@ -91,9 +89,9 @@ def createTree(dataSet, labels, featLabels):
     append(featLabels, featLab)
     myTree = {featLab: {}}
     for value in unique(dataSet[:, feat]):
-        myTree[featLab][value] = createDataSet(
+        myTree[featLab][value] = createTree(
             splitDataSet(dataSet, feat, value),
-            concatenate(labels[:feat], labels[feat + 1 :]),
+            append(labels[:feat], labels[feat + 1 :]),
             featLabels,
         )
     return myTree
@@ -143,7 +141,7 @@ def plotNode(nodeTxt, centerPt, parentPt, nodeType):
         ha="center",
         bbox=nodeType,
         arrowprops=arrow_args,
-        FontProperties=font,
+        font_properties=font,
     )
 
 
