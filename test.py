@@ -18,5 +18,5 @@ def calcShannonEnt(dataSet):
     return shannonEnt  # 返回经验熵
 
 
-a = array([[1, 1], [2, 1], [1, 2], [2, 1], [1, 1]])
-print(calcShannonEnt(a))
+p = {1.0: 0.16666666666666666, 2.0: 0.20833333333333334, 3.0: 0.625}
+print(p[4])

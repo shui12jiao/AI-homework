@@ -5,17 +5,6 @@ import matplotlib.pyplot as plt
 from numpy import *
 from sklearn import datasets
 
-# 函数说明：计算给定数据集的经验熵（香农熵）  Parameters：dataSet：数据集  Returns：shannonEnt：经验熵
-def calcShannonEnt(dataSet):
-    num = shape(dataSet)[0]
-    type = unique(dataSet[:, -1])
-    p = {}
-    shannonEnt = 0
-    for i in type:
-        p[i] = sum(dataSet[:, -1] == i) / num
-        shannonEnt -= p[i] * log2(p[i])
-    return shannonEnt  # 返回经验熵
-
 
 # 函数说明：创建数据集  Returns：dataSet：数据集 labels：分类属性
 def createDataSet(path):
@@ -33,6 +22,64 @@ def createDataSet(path):
     return array(dataSet), array(labels)
 
 
+# 函数说明：创建决策树  Parameters: dataSet：训练数据集 labels：分类属性标签 featLabels：存储选择的最优特征标签  Returns：myTree：决策树
+def createTree(dataSet, labels, featLabels, method="entropy"):
+    classList = dataSet[:, -1]
+    if all(classList[:] == classList[0]):
+        return classList[0]
+    if shape(dataSet)[0] <= 1:
+        return majorityCnt(classList)
+
+    feat = chooseBestFeatureToSplit(dataSet, method)
+    featLab = labels[feat]
+    append(featLabels, featLab)
+    myTree = {featLab: {}}
+    for value in unique(dataSet[:, feat]):
+        myTree[featLab][value] = createTree(
+            splitDataSet(dataSet, feat, value),
+            append(labels[:feat], labels[feat + 1 :]),
+            featLabels,
+        )
+    return myTree
+
+
+# 函数说明：计算给定数据集的经验熵（香农熵）  Parameters：dataSet：数据集  Returns：shannonEnt：经验熵
+def calcShannonEnt(dataSet):
+    num = shape(dataSet)[0]
+    type = unique(dataSet[:, -1])
+    p = {}
+    shannonEnt = 0
+    for i in type:
+        p[i] = sum(dataSet[:, -1] == i) / num
+        shannonEnt -= p[i] * log2(p[i])
+    return shannonEnt  # 返回经验熵
+
+
+def calcGini(dataSet):
+    labels_count = {}
+    number = shape(dataSet)[0]
+    for i, _ in enumerate(dataSet):
+        label = dataSet[i][-1]
+        if label in labels_count.keys():
+            labels_count[label] += 1
+        else:
+            labels_count[label] = 1
+    Gini = 0.0
+    for label, value in labels_count.items():
+        pr = 1.0 * value / number * value / number
+        Gini += 1 - pr
+    return Gini
+
+
+def calcError(dataSet):
+    num = shape(dataSet)[0]
+    type = unique(dataSet[:, -1])
+    p = {}
+    for i in type:
+        p[i] = sum(dataSet[:, -1] == i) / num
+    return 1 - max(p, key=p.get)
+
+
 # 函数说明：按照给定特征划分数据集  Parameters：dataSet:待划分的数据集 axis：划分数据集的特征 value：需要返回的特征值  Returns：返回划分后的数据集
 def splitDataSet(dataSet, axis, value):
     retDataSet = []
@@ -42,9 +89,15 @@ def splitDataSet(dataSet, axis, value):
     return array(retDataSet)
 
 
-def chooseBestFeatureToSplit(dataSet):
+def chooseBestFeatureToSplit(dataSet, method):
     featNum = shape(dataSet)[1] - 1
-    entD = calcShannonEnt(dataSet)
+    entD = 0
+    if method == "entropy":
+        entD = calcShannonEnt(dataSet)
+    elif method == "gini":
+        entD = calcGini(dataSet)
+    elif method == "error":
+        entD = calcError(dataSet)
     gainMax = 0
     bestFeature = -1
 
@@ -53,7 +106,12 @@ def chooseBestFeatureToSplit(dataSet):
         for value in unique(dataSet[:, feat]):
             subDataSet = splitDataSet(dataSet, feat, value)
             p = shape(subDataSet)[0] / shape(dataSet)[0]
-            ent += p * calcShannonEnt(subDataSet)
+            if method == "entropy":
+                ent += p * calcShannonEnt(subDataSet)
+            elif method == "gini":
+                ent += p * calcGini(subDataSet)
+            elif method == "error":
+                ent += p * calcError(subDataSet)
         gain = entD - ent
         if gain > gainMax:
             gainMax = gain
@@ -74,27 +132,6 @@ def majorityCnt(classList):
         classCount.items(), key=operator.itemgetter(1), reverse=True
     )
     return sortedClassCount[0][0]
-
-
-# 函数说明：创建决策树  Parameters: dataSet：训练数据集 labels：分类属性标签 featLabels：存储选择的最优特征标签  Returns：myTree：决策树
-def createTree(dataSet, labels, featLabels):
-    classList = dataSet[:, -1]
-    if all(classList[:] == classList[0]):
-        return classList[0]
-    if shape(dataSet)[0] <= 1:
-        return majorityCnt(classList)
-
-    feat = chooseBestFeatureToSplit(dataSet)
-    featLab = labels[feat]
-    append(featLabels, featLab)
-    myTree = {featLab: {}}
-    for value in unique(dataSet[:, feat]):
-        myTree[featLab][value] = createTree(
-            splitDataSet(dataSet, feat, value),
-            append(labels[:feat], labels[feat + 1 :]),
-            featLabels,
-        )
-    return myTree
 
 
 # 函数说明：获取决策树叶子节点的数目  Parameters：myTree：决策树  Returns：numLeafs：决策树的叶子节点的数目
@@ -195,7 +232,8 @@ def createPlot(inTree):
 
 if __name__ == "__main__":
     dataSet, labels = createDataSet("lab5/lenses.data")
+    methods = ["entropy", "gini", "error"]
     featLabels = array([])
-    myTree = createTree(dataSet, labels, featLabels)
+    myTree = createTree(dataSet, labels, featLabels, method=methods[2])
     print(myTree)
     createPlot(myTree)
