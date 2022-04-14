@@ -2,6 +2,7 @@ import operator
 from matplotlib.font_manager import FontProperties
 import matplotlib.pyplot as plt
 from numpy import *
+from sklearn import datasets
 
 # 函数说明：计算给定数据集的经验熵（香农熵）  Parameters：dataSet：数据集  Returns：shannonEnt：经验熵
 def calcShannonEnt(dataSet):
@@ -33,12 +34,29 @@ def createDataSet(path):
 
 # 函数说明：按照给定特征划分数据集  Parameters：dataSet:待划分的数据集 axis：划分数据集的特征 value：需要返回的特征值  Returns：返回划分后的数据集
 def splitDataSet(dataSet, axis, value):
-    # 返回划分后的数据集
+    retDataSet = empty()
+    for vector in dataSet:
+        if vector[axis] == value:
+            append(retDataSet, concatenate(vector[:axis], vector[axis + 1 :]))
     return retDataSet
 
 
 def chooseBestFeatureToSplit(dataSet):
+    featNum = shape(dataSet)[1]-1
+    num = shape(dataSet)[0]
+    type = unique(dataSet[:, -1])
+    entD = calcShannonEnt(dataSet)
+    bestFeature = -1
+
+    for feat in range(featNum):
+        featCol = dataSet[:,feat]
+        ent = 0
+        for value in unique(featCol):
+            # TODO
+    
+    
     # 这里调用 calcShannonEnt 函数来计算熵
+    
     # 返回信息增益最大特征的索引值
     return bestFeature
 
