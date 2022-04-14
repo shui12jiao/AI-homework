@@ -22,8 +22,36 @@ def createDataSet(path):
     return array(dataSet), array(labels)
 
 
+def wineDataSet():
+    dataSet = []
+    fr = open("lab5/wine.data")
+    for line in fr.readlines():
+        lineArr = array(line.strip().split(","), dtype=float)
+        dataSet.append(lineArr[:])
+    dataSet = array(dataSet)
+    dataSet[:, [0, -1]] = dataSet[:, [-1, 0]]
+    labels = array(
+        [
+            "Alcohol",
+            "Malic acid",
+            "Ash",
+            "Alcalinity of ash  ",
+            "Magnesium",
+            "Total phenols",
+            "Flavanoids",
+            "Nonflavanoid phenols",
+            "Proanthocyanins",
+            "Color intensity",
+            "Hue",
+            "OD280/OD315 of diluted wines",
+            "Proline",
+        ]
+    )
+    return dataSet, labels
+
+
 # 函数说明：创建决策树  Parameters: dataSet：训练数据集 labels：分类属性标签 featLabels：存储选择的最优特征标签  Returns：myTree：决策树
-def createTree(dataSet, labels, featLabels, method="entropy"):
+def createTree(dataSet, labels, featLabels, method):
     classList = dataSet[:, -1]
     if all(classList[:] == classList[0]):
         return classList[0]
@@ -39,6 +67,7 @@ def createTree(dataSet, labels, featLabels, method="entropy"):
             splitDataSet(dataSet, feat, value),
             append(labels[:feat], labels[feat + 1 :]),
             featLabels,
+            method,
         )
     return myTree
 
@@ -91,13 +120,7 @@ def splitDataSet(dataSet, axis, value):
 
 def chooseBestFeatureToSplit(dataSet, method):
     featNum = shape(dataSet)[1] - 1
-    entD = 0
-    if method == "entropy":
-        entD = calcShannonEnt(dataSet)
-    elif method == "gini":
-        entD = calcGini(dataSet)
-    elif method == "error":
-        entD = calcError(dataSet)
+    entD = method(dataSet)
     gainMax = 0
     bestFeature = -1
 
@@ -106,12 +129,7 @@ def chooseBestFeatureToSplit(dataSet, method):
         for value in unique(dataSet[:, feat]):
             subDataSet = splitDataSet(dataSet, feat, value)
             p = shape(subDataSet)[0] / shape(dataSet)[0]
-            if method == "entropy":
-                ent += p * calcShannonEnt(subDataSet)
-            elif method == "gini":
-                ent += p * calcGini(subDataSet)
-            elif method == "error":
-                ent += p * calcError(subDataSet)
+            ent += p * method(subDataSet)
         gain = entD - ent
         if gain > gainMax:
             gainMax = gain
@@ -231,9 +249,10 @@ def createPlot(inTree):
 
 
 if __name__ == "__main__":
-    dataSet, labels = createDataSet("lab5/lenses.data")
-    methods = ["entropy", "gini", "error"]
+    # dataSet, labels = createDataSet("lab5/lenses.data")
+    dataSet, labels = wineDataSet()
+    methods = {"entropy": calcShannonEnt, "gini": calcGini, "error": calcError}
     featLabels = array([])
-    myTree = createTree(dataSet, labels, featLabels, method=methods[2])
+    myTree = createTree(dataSet, labels, featLabels, method=methods["entropy"])
     print(myTree)
     createPlot(myTree)
