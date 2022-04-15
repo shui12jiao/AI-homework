@@ -4,6 +4,7 @@ from matplotlib.font_manager import FontProperties
 import matplotlib.pyplot as plt
 from numpy import *
 from sklearn import datasets
+from sklearn.model_selection import train_test_split
 
 
 # 函数说明：创建数据集  Returns：dataSet：数据集 labels：分类属性
@@ -27,9 +28,8 @@ def wineDataSet():
     fr = open("lab5/wine.data")
     for line in fr.readlines():
         lineArr = array(line.strip().split(","), dtype=float)
-        dataSet.append(lineArr[:])
+        dataSet.append(append(lineArr[1:], lineArr[0]))
     dataSet = array(dataSet)
-    dataSet[:, [0, -1]] = dataSet[:, [-1, 0]]
     labels = array(
         [
             "Alcohol",
@@ -53,7 +53,7 @@ def wineDataSet():
 # 函数说明：创建决策树  Parameters: dataSet：训练数据集 labels：分类属性标签 featLabels：存储选择的最优特征标签  Returns：myTree：决策树
 def createTree(dataSet, labels, featLabels, method):
     classList = dataSet[:, -1]
-    if all(classList[:] == classList[0]):
+    if all(classList == classList[0]):
         return classList[0]
     if shape(dataSet)[0] <= 1:
         return majorityCnt(classList)
@@ -103,10 +103,10 @@ def calcGini(dataSet):
 def calcError(dataSet):
     num = shape(dataSet)[0]
     type = unique(dataSet[:, -1])
-    p = {}
+    p = []
     for i in type:
-        p[i] = sum(dataSet[:, -1] == i) / num
-    return 1 - max(p, key=p.get)
+        p.append(sum(dataSet[:, -1] == i) / num)
+    return 1 - max(p)
 
 
 # 函数说明：按照给定特征划分数据集  Parameters：dataSet:待划分的数据集 axis：划分数据集的特征 value：需要返回的特征值  Returns：返回划分后的数据集
@@ -121,7 +121,7 @@ def splitDataSet(dataSet, axis, value):
 def chooseBestFeatureToSplit(dataSet, method):
     featNum = shape(dataSet)[1] - 1
     entD = method(dataSet)
-    gainMax = 0
+    gainMax = float("-inf")
     bestFeature = -1
 
     for feat in range(featNum):
@@ -215,7 +215,7 @@ def plotTree(myTree, parentPt, nodeTxt):
     depth = getTreeDepth(myTree)  # 获取决策树层数
     firstStr = next(iter(myTree))  # 下个字典
     cntrPt = (
-        plotTree.xOff + (1.0 + float(numLeafs)) / 2.0 / plotTree.totalW,
+        plotTree.xOff + (1.0 + float(numLeafs)) / 2 / plotTree.totalW,
         plotTree.yOff,
     )  # 中心位置
     plotMidText(cntrPt, parentPt, nodeTxt)  # 标注有向边属性值
@@ -248,11 +248,47 @@ def createPlot(inTree):
     plt.show()  # 显示绘制结果
 
 
+def predict(tree, testSets, labels):
+    def one(t, v, l):
+        if len(v) == 1 or type(t) == type(v[-1]):
+            return t
+        key = list(t)[0]
+        feat = -1
+        for i, attri in enumerate(l):
+            if attri == key:
+                feat = i
+        value = v[feat]
+        newVector = delete(v, feat)
+        newLabels = delete(l, feat)
+
+        return one(t[key][value], newVector, newLabels)
+
+    predicts = []
+    for row in testSets:
+        predicts.append(one(tree, row, labels))
+    return array(predicts)
+
+
+def score(tree, testSets, labels):
+    predicts = predict(tree, testSets, labels)
+    classes = testSets[:, -1]
+    num = shape(classes)[0]
+    right = 0
+    for i in range(num):
+        if predicts[i] == classes[i]:
+            right += 1
+    return right / num
+
+
 if __name__ == "__main__":
     # dataSet, labels = createDataSet("lab5/lenses.data")
     dataSet, labels = wineDataSet()
     methods = {"entropy": calcShannonEnt, "gini": calcGini, "error": calcError}
+
+    # x_train, x_test = train_test_split(dataSet, random_state=1, train_size=0.9)
+
     featLabels = array([])
     myTree = createTree(dataSet, labels, featLabels, method=methods["entropy"])
     print(myTree)
-    createPlot(myTree)
+    # print(score(myTree, dataSet, labels))
+    # createPlot(myTree)
