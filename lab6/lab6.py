@@ -4,6 +4,8 @@ from turtle import shape
 import numpy as np
 import struct
 import math
+import matplotlib.pyplot as plt
+
 
 # 初始化输入输出层链接权值
 def initCompetition(n, m, w, h):
@@ -43,18 +45,37 @@ def nomalize_weight(com_weight):
 
 # 得到获胜神经元索引
 def getWinner(data, com_weight):
+    max_sim = 0
+    n, m, _, _ = np.shape(com_weight)
     mark_n, mark_m = 0, 0
-    min_s = float("inf")
-    n, m = np.shape(com_weight)[0], np.shape(com_weight)[1]
-
     for i in range(n):
         for j in range(m):
-            # res = np.sum(np.dot(data, com_weight[i][j]))
-            res = np.sum(data * com_weight[i][j])
-            if res < min_s:
-                min_s = res
-                mark_n, mark_m = i, j
-    # 返回该神经元的行值和列值 mark_n 为行值，mark_m 为列值
+            sim = np.sum(data * com_weight[i, j])
+            # sim = np.sum(np.dot(data, com_weight[i][j])) / (
+            #     np.sqrt(np.sum(np.dot(data, data.transpose())))
+            #     * np.sqrt(
+            #         np.sum(np.dot(com_weight[i][j], com_weight[i][j].transpose()))
+            #     )
+            # )
+            if sim > max_sim:
+                max_sim = sim
+                mark_n = i
+                mark_m = j
+    return mark_n, mark_m
+
+
+# 得到获胜神经元索引
+def getWinnerDist(data, com_weight):
+    min_dist = np.inf
+    n, m, _, _ = np.shape(com_weight)
+    mark_n, mark_m = 0, 0
+    for i in range(n):
+        for j in range(m):
+            dist = np.sum(cal2NF(com_weight[i][j] - data))
+            if dist < min_dist:
+                min_dist = dist
+                mark_n = i
+                mark_m = j
     return mark_n, mark_m
 
 
@@ -78,7 +99,7 @@ def eta(t, N):
 # som
 def som(train_data, train_label, com_weight, T, N_neighbor):
     for t in range(T - 1):
-        print("epoch:" + str(t))
+        # print("epoch:" + str(t))
         com_weight = nomalize_weight(com_weight)
         for data in train_data:
             n, m = getWinner(data, com_weight)
@@ -120,16 +141,28 @@ def create_labels(com_weight):
 
 def test(labels, weight, test_data):
     _, M, _, _ = np.shape(com_weight)
+    predicts = []
     if len(np.shape(test_data)) >= 3:
         for i in range(len(test_data)):
             n, m = getWinner(test_data[i], weight)
             i = n * M + m
-            print(labels.get(i))
+            predicts.append(labels.get(i))
     else:
         n, m = getWinner(test_data, weight)
         i = n * M + m
-        print(labels.get(i))
+        predicts.append(labels.get(i))
     # 数据的标签与最近的神经元相同
+    return predicts
+
+
+def score(predicts, labels):
+    assert len(predicts) == len(labels)
+    cnt = 0
+    num = len(predicts)
+    for i in range(num):
+        if predicts[i] == labels[i]:
+            cnt += 1
+    return cnt / num
 
 
 def decode_idx3_ubyte(idx3_ubyte_file):
@@ -184,6 +217,18 @@ def decode_idx1_ubyte(idx1_ubyte_file):
     return labels
 
 
+def testAndDraw(labels, weight, test_data):  # 绘图
+    _, M, _, _ = np.shape(com_weight)
+    x, y, predicts = [], [], []
+    for i in range(len(test_data)):
+        n, m = getWinner(test_data[i], weight)
+        i = n * M + m
+        predicts.append(labels.get(i))
+        x.append(n), y.append(m)
+    plt.scatter(x, y, c=predicts, cmap="brg")
+    plt.show()
+
+
 # 训练集文件
 train_images_idx3_ubyte_file = "lab6/MNIST/train-images.idx3-ubyte"
 # 训练集标签文件
@@ -196,18 +241,29 @@ test_labels_idx1_ubyte_file = "lab6/MNIST/t10k-labels.idx1-ubyte"
 # 自行设置参数：SOM 网络 size：（M，N） 迭代次数：T 近邻范围：N_neighbor
 if __name__ == "__main__":
     # 为降低运算量，这里只加载 500 条数据
-    indexes = np.random.randint(low=0, high=60000, size=[500])
+    np.random.seed(7)
+    indexes = np.random.randint(low=0, high=60000, size=[700])
     train_datas = decode_idx3_ubyte(train_images_idx3_ubyte_file)[indexes]
     train_labels = decode_idx1_ubyte(train_labels_idx1_ubyte_file)[indexes]
-    test_image = decode_idx3_ubyte(test_images_idx3_ubyte_file)[0:10]
-    test_label = decode_idx1_ubyte(test_labels_idx1_ubyte_file)[0:10]
-    T = 10
-    N_neighbor = 6
+    indexes = np.random.randint(low=0, high=10000, size=[20])
+    test_image = decode_idx3_ubyte(test_images_idx3_ubyte_file)[indexes]
+    test_label = decode_idx1_ubyte(test_labels_idx1_ubyte_file)[indexes]
     train_data = normalize_data(train_datas)
-    com_weight = initCompetition(8, 8, 28, 28)
-    # labels : 每个神经元的标签
-    weight = som(train_data, train_labels, com_weight, T, N_neighbor)
-    labels, weight = create_labels(weight)
-    print("test_predict:")
-    test(labels, weight, test_image)
-    print("test_label:\n", test_label)
+
+    T = 7
+    N_neighbor = 6
+
+    for i in range(20, 121, 11):
+        # for i in range(20, 22, 2):
+        N_neighbor = i
+        com_weight = initCompetition(8, 8, 28, 28)
+        weight = som(train_data, train_labels, com_weight, T, N_neighbor)
+
+        labels, weight = create_labels(weight)
+        # print("labels:\n", labels)
+        predicts = test(labels, weight, test_image)
+        # print("predict_label:\n", predicts)
+        # print("test_label:\n", test_label)
+        print(f"i:{i}", score(predicts, test_label))
+        print()
+        # testAndDraw(labels, weight, test_image)
