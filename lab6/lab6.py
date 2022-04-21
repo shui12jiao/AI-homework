@@ -1,4 +1,5 @@
 import enum
+from operator import index
 from turtle import shape
 import numpy as np
 import struct
@@ -22,7 +23,8 @@ def normalize_data(train_data):
         for data in x:
             two_NF = cal2NF(data)
             for i in range(len(data)):
-                data[i] = data[i] / two_NF
+                if two_NF != 0:
+                    data[i] = data[i] / two_NF
     # 返回归一化处理之后的数据，数据结构不变
     return train_data
 
@@ -30,24 +32,27 @@ def normalize_data(train_data):
 # 将权值归一化
 def nomalize_weight(com_weight):
     for x in com_weight:
-        for data in x:
-            two_NF = cal2NF(data)
-            for i in range(len(data)):
-                data[i] = data[i] / two_NF
+        for y in x:
+            for data in y:
+                two_NF = cal2NF(data)
+                for i in range(len(data)):
+                    if two_NF != 0:
+                        data[i] = data[i] / two_NF
     return com_weight
 
 
 # 得到获胜神经元索引
 def getWinner(data, com_weight):
     mark_n, mark_m = 0, 0
-    min = float("inf")
+    min_s = float("inf")
     n, m = np.shape(com_weight)[0], np.shape(com_weight)[1]
 
     for i in range(n):
         for j in range(m):
-            res = np.sum(np.dot(data, com_weight[i][j]))
-            if res < min:
-                min = res
+            # res = np.sum(np.dot(data, com_weight[i][j]))
+            res = np.sum(data * com_weight[i][j])
+            if res < min_s:
+                min_s = res
                 mark_n, mark_m = i, j
     # 返回该神经元的行值和列值 mark_n 为行值，mark_m 为列值
     return mark_n, mark_m
@@ -91,12 +96,12 @@ def som(train_data, train_label, com_weight, T, N_neighbor):
 
 # 为每个神经元打上标签
 def create_labels(com_weight):
-    N, M, w, h = np.shape(com_weight)
+    _, M, _, _ = np.shape(com_weight)
     belong = {}
     for i in range(len(train_data)):
         n, m = getWinner(train_data[i], com_weight)
         key = n * M + m
-        if key in belong:
+        if key in belong.keys():
             belong[key].append(train_labels[i])
         else:
             belong[key] = []
@@ -114,25 +119,17 @@ def create_labels(com_weight):
 
 
 def test(labels, weight, test_data):
-    # weight = som(train_data, train_labels, com_weight, T, N_neighbor)
-    # labels, weight = create_labels(weight)
-    # test(labels, weight, test_image)
     _, M, _, _ = np.shape(com_weight)
-    for i, data in enumerate(test_data):
-        n, m = getWinner(data, weight)
+    if len(np.shape(test_data)) >= 3:
+        for i in range(len(test_data)):
+            n, m = getWinner(test_data[i], weight)
+            i = n * M + m
+            print(labels.get(i))
+    else:
+        n, m = getWinner(test_data, weight)
         i = n * M + m
         print(labels.get(i))
     # 数据的标签与最近的神经元相同
-
-
-# 训练集文件
-train_images_idx3_ubyte_file = "lab6/MNIST/train-images.idx3-ubyte"
-# 训练集标签文件
-train_labels_idx1_ubyte_file = "lab6/MNIST/train-labels.idx1-ubyte"
-# 测试集文件
-test_images_idx3_ubyte_file = "lab6/MNIST/t10k-images.idx3-ubyte"
-# 测试集标签文件
-test_labels_idx1_ubyte_file = "lab6/MNIST/t10k-labels.idx1-ubyte"
 
 
 def decode_idx3_ubyte(idx3_ubyte_file):
@@ -187,19 +184,30 @@ def decode_idx1_ubyte(idx1_ubyte_file):
     return labels
 
 
+# 训练集文件
+train_images_idx3_ubyte_file = "lab6/MNIST/train-images.idx3-ubyte"
+# 训练集标签文件
+train_labels_idx1_ubyte_file = "lab6/MNIST/train-labels.idx1-ubyte"
+# 测试集文件
+test_images_idx3_ubyte_file = "lab6/MNIST/t10k-images.idx3-ubyte"
+# 测试集标签文件
+test_labels_idx1_ubyte_file = "lab6/MNIST/t10k-labels.idx1-ubyte"
+
 # 自行设置参数：SOM 网络 size：（M，N） 迭代次数：T 近邻范围：N_neighbor
 if __name__ == "__main__":
     # 为降低运算量，这里只加载 500 条数据
-    train_datas = decode_idx3_ubyte(train_images_idx3_ubyte_file)[0:500]
-    train_labels = decode_idx1_ubyte(train_labels_idx1_ubyte_file)[0:500]
-    test_image = decode_idx3_ubyte(test_images_idx3_ubyte_file)[10]
-    test_label = decode_idx1_ubyte(test_labels_idx1_ubyte_file)[10]
-    T = 50
+    indexes = np.random.randint(low=0, high=60000, size=[500])
+    train_datas = decode_idx3_ubyte(train_images_idx3_ubyte_file)[indexes]
+    train_labels = decode_idx1_ubyte(train_labels_idx1_ubyte_file)[indexes]
+    test_image = decode_idx3_ubyte(test_images_idx3_ubyte_file)[0:10]
+    test_label = decode_idx1_ubyte(test_labels_idx1_ubyte_file)[0:10]
+    T = 10
     N_neighbor = 6
     train_data = normalize_data(train_datas)
     com_weight = initCompetition(8, 8, 28, 28)
     # labels : 每个神经元的标签
     weight = som(train_data, train_labels, com_weight, T, N_neighbor)
     labels, weight = create_labels(weight)
+    print("test_predict:")
     test(labels, weight, test_image)
-    print(test_label)
+    print("test_label:\n", test_label)
