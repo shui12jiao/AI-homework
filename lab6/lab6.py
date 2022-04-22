@@ -99,12 +99,12 @@ def eta(t, N):
 
 
 # som
-def som(train_data, train_label, com_weight, T, N_neighbor):
+def som(train_data, train_label, com_weight, T, N_neighbor, method=getWinner):
     for t in range(T - 1):
         # print("epoch:" + str(t))
         com_weight = nomalize_weight(com_weight)
         for data in train_data:
-            n, m = getWinner(data, com_weight)
+            n, m = method(data, com_weight)
             neighbor = getNeighbor(n, m, N_neighbor, com_weight)
             for x in neighbor:
                 j_n = x[0]
@@ -118,11 +118,11 @@ def som(train_data, train_label, com_weight, T, N_neighbor):
 
 
 # 为每个神经元打上标签
-def create_labels(com_weight):
+def create_labels(com_weight, method=getWinner):
     _, M, _, _ = np.shape(com_weight)
     belong = {}
     for i in range(len(train_data)):
-        n, m = getWinner(train_data[i], com_weight)
+        n, m = method(train_data[i], com_weight)
         key = n * M + m
         if key in belong.keys():
             belong[key].append(train_labels[i])
@@ -141,16 +141,16 @@ def create_labels(com_weight):
     return labels, com_weight
 
 
-def test(labels, weight, test_data):
+def test(labels, weight, test_data, method=getWinner):
     _, M, _, _ = np.shape(com_weight)
     predicts = []
     if len(np.shape(test_data)) >= 3:
         for i in range(len(test_data)):
-            n, m = getWinner(test_data[i], weight)
+            n, m = method(test_data[i], weight)
             i = n * M + m
             predicts.append(labels.get(i))
     else:
-        n, m = getWinner(test_data, weight)
+        n, m = method(test_data, weight)
         i = n * M + m
         predicts.append(labels.get(i))
     # 数据的标签与最近的神经元相同
@@ -251,6 +251,13 @@ def drawH(weight, labels):  # 绘图
     plt.show()
 
 
+def drawScore(x, scores):
+    plt.bar(x, scores)
+    plt.xlabel("T")
+    plt.ylabel("score")
+    plt.show()
+
+
 # 训练集文件
 train_images_idx3_ubyte_file = "lab6/MNIST/train-images.idx3-ubyte"
 # 训练集标签文件
@@ -264,32 +271,34 @@ test_labels_idx1_ubyte_file = "lab6/MNIST/t10k-labels.idx1-ubyte"
 if __name__ == "__main__":
     # 为降低运算量，这里只加载 500 条数据
     np.random.seed(7)
-    indexes = np.random.randint(low=0, high=60000, size=[700])
+    indexes = np.random.randint(low=0, high=60000, size=[500])
     train_datas = decode_idx3_ubyte(train_images_idx3_ubyte_file)[indexes]
     train_labels = decode_idx1_ubyte(train_labels_idx1_ubyte_file)[indexes]
     indexes = np.random.randint(low=0, high=10000, size=[20])
     test_image = decode_idx3_ubyte(test_images_idx3_ubyte_file)[indexes]
     test_label = decode_idx1_ubyte(test_labels_idx1_ubyte_file)[indexes]
     train_data = normalize_data(train_datas)
-
-    T = 7
-    N_neighbor = 23
-
-    # for i in range(20, 121, 11):
-    #     N_neighbor = i
-    #     com_weight = initCompetition(8, 8, 28, 28)
-    #     weight = som(train_data, train_labels, com_weight, T, N_neighbor)
-
-    #     labels, weight = create_labels(weight)
-    #     # print("labels:\n", labels)
-    #     predicts = test(labels, weight, test_image)
-    #     # print("predict_label:\n", predicts)
-    #     # print("test_label:\n", test_label)
-    #     print(f"i:{i}", score(predicts, test_label))
-    #     print()
-    #     # testAndDraw(labels, weight, test_image)
-
     com_weight = initCompetition(8, 8, 28, 28)
-    weight = som(train_data, train_labels, com_weight, T, N_neighbor)
-    labels, weight = create_labels(weight)
-    drawH(weight, labels)
+
+    T = 10
+    N_neighbor = 21
+    X = []
+    Y = []
+    for i in range(1, 5, 1):
+        T = i
+        X.append(i)
+        weight = som(train_data, train_labels, com_weight.copy(), T, N_neighbor)
+        labels, weight = create_labels(weight)
+        # print("labels:\n", labels)
+        predicts = test(labels, weight, test_image)
+        # print("predict_label:\n", predicts)
+        # print("test_label:\n", test_label)
+        # print(f"i:{i}", score(predicts, test_label))
+        # print()
+        Y.append(score(predicts, test_label))
+
+    drawScore(X, Y)
+    # com_weight = initCompetition(8, 8, 28, 28)
+    # weight = som(train_data, train_labels, com_weight, T, N_neighbor)
+    # labels, weight = create_labels(weight)
+    # drawH(weight, labels)
