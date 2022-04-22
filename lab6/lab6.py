@@ -1,3 +1,4 @@
+from calendar import c
 import enum
 from operator import index
 from turtle import shape
@@ -5,6 +6,7 @@ import numpy as np
 import struct
 import math
 import matplotlib.pyplot as plt
+from sklearn.utils import compute_class_weight
 
 
 # 初始化输入输出层链接权值
@@ -217,15 +219,35 @@ def decode_idx1_ubyte(idx1_ubyte_file):
     return labels
 
 
-def testAndDraw(labels, weight, test_data):  # 绘图
-    _, M, _, _ = np.shape(com_weight)
-    x, y, predicts = [], [], []
-    for i in range(len(test_data)):
-        n, m = getWinner(test_data[i], weight)
-        i = n * M + m
-        predicts.append(labels.get(i))
-        x.append(n), y.append(m)
-    plt.scatter(x, y, c=predicts, cmap="brg")
+def draw(weight, labels):  # 绘图
+    _, M, _, _ = np.shape(weight)
+    cp = [
+        "red",
+        "orange",
+        "gold",
+        "yellow",
+        "green",
+        "lime",
+        "cyan",
+        "dodgerblue",
+        "blue",
+        "purple",
+    ]
+    for key in labels.keys():
+        j = key % M
+        i = (key - j) / M
+        plt.scatter(i, j, c=cp[labels[key]])
+    plt.show()
+
+
+def drawH(weight, labels):  # 绘图
+    _, M, _, _ = np.shape(weight)
+    X = np.empty(shape=(M, M))
+    for key in labels.keys():
+        j = int(key % M)
+        i = int((key - j) / M)
+        X[i][j] = labels[key]
+    plt.imshow(X, interpolation="nearest")
     plt.show()
 
 
@@ -251,19 +273,23 @@ if __name__ == "__main__":
     train_data = normalize_data(train_datas)
 
     T = 7
-    N_neighbor = 6
+    N_neighbor = 23
 
-    for i in range(20, 121, 11):
-        # for i in range(20, 22, 2):
-        N_neighbor = i
-        com_weight = initCompetition(8, 8, 28, 28)
-        weight = som(train_data, train_labels, com_weight, T, N_neighbor)
+    # for i in range(20, 121, 11):
+    #     N_neighbor = i
+    #     com_weight = initCompetition(8, 8, 28, 28)
+    #     weight = som(train_data, train_labels, com_weight, T, N_neighbor)
 
-        labels, weight = create_labels(weight)
-        # print("labels:\n", labels)
-        predicts = test(labels, weight, test_image)
-        # print("predict_label:\n", predicts)
-        # print("test_label:\n", test_label)
-        print(f"i:{i}", score(predicts, test_label))
-        print()
-        # testAndDraw(labels, weight, test_image)
+    #     labels, weight = create_labels(weight)
+    #     # print("labels:\n", labels)
+    #     predicts = test(labels, weight, test_image)
+    #     # print("predict_label:\n", predicts)
+    #     # print("test_label:\n", test_label)
+    #     print(f"i:{i}", score(predicts, test_label))
+    #     print()
+    #     # testAndDraw(labels, weight, test_image)
+
+    com_weight = initCompetition(8, 8, 28, 28)
+    weight = som(train_data, train_labels, com_weight, T, N_neighbor)
+    labels, weight = create_labels(weight)
+    drawH(weight, labels)
