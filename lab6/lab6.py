@@ -233,6 +233,8 @@ def draw(weight, labels):  # 绘图
         "blue",
         "purple",
     ]
+    plt.xlabel("i")
+    plt.ylabel("j")
     for key in labels.keys():
         j = key % M
         i = (key - j) / M
@@ -247,13 +249,15 @@ def drawH(weight, labels):  # 绘图
         j = int(key % M)
         i = int((key - j) / M)
         X[i][j] = labels[key]
+    plt.xlabel("i")
+    plt.ylabel("j")
     plt.imshow(X, interpolation="nearest")
     plt.show()
 
 
 def drawScore(x, scores):
     plt.bar(x, scores)
-    plt.xlabel("T")
+    plt.xlabel("size: (M, N)")
     plt.ylabel("score")
     plt.show()
 
@@ -278,27 +282,32 @@ if __name__ == "__main__":
     test_image = decode_idx3_ubyte(test_images_idx3_ubyte_file)[indexes]
     test_label = decode_idx1_ubyte(test_labels_idx1_ubyte_file)[indexes]
     train_data = normalize_data(train_datas)
-    com_weight = initCompetition(8, 8, 28, 28)
 
     T = 10
     N_neighbor = 21
-    X = []
-    Y = []
-    for i in range(1, 5, 1):
-        T = i
-        X.append(i)
-        weight = som(train_data, train_labels, com_weight.copy(), T, N_neighbor)
-        labels, weight = create_labels(weight)
-        # print("labels:\n", labels)
-        predicts = test(labels, weight, test_image)
-        # print("predict_label:\n", predicts)
-        # print("test_label:\n", test_label)
-        # print(f"i:{i}", score(predicts, test_label))
-        # print()
-        Y.append(score(predicts, test_label))
+    # X = []
+    # Y = []
+    # size = [(4, 4), (4, 8), (4, 12), (4, 4), (8, 4), (12, 4), (20, 20)]
+    # for i in range(len(size)):
+    #     com_weight = initCompetition(size[i][0], size[i][1], 28, 28)
+    #     X.append(i)
+    #     weight = som(train_data, train_labels, com_weight, T, N_neighbor)
+    #     labels, weight = create_labels(weight)
+    #     # print("labels:\n", labels)
+    #     predicts = test(labels, weight, test_image)
+    #     # print("predict_label:\n", predicts)
+    #     # print("test_label:\n", test_label)
+    #     # print(f"i:{i}", score(predicts, test_label))
+    #     # print()
+    #     Y.append(score(predicts, test_label))
 
-    drawScore(X, Y)
-    # com_weight = initCompetition(8, 8, 28, 28)
-    # weight = som(train_data, train_labels, com_weight, T, N_neighbor)
-    # labels, weight = create_labels(weight)
-    # drawH(weight, labels)
+    # drawScore(X, Y)
+    com_weight = initCompetition(8, 8, 28, 28)
+    weight = som(train_data, train_labels, com_weight, T, N_neighbor)
+    labels, weight = create_labels(weight)
+    predicts = test(labels, weight, test_image)
+    print("score", score(predicts, test_label))
+    print("labels", labels)
+
+    draw(weight, labels)
+    drawH(weight, labels)
