@@ -1,313 +1,294 @@
-from calendar import c
-import enum
-from operator import index
-from turtle import shape
-import numpy as np
-import struct
-import math
+import operator
+from re import sub
+from matplotlib.font_manager import FontProperties
 import matplotlib.pyplot as plt
-from sklearn.utils import compute_class_weight
+from numpy import *
+from sklearn import datasets
+from sklearn.model_selection import train_test_split
 
 
-# 初始化输入输出层链接权值
-def initCompetition(n, m, w, h):
-    array = np.random.random(size=n * m * w * h)
-    com_weight = array.reshape(n, m, w, h)
-    return com_weight
-
-
-# 计算欧氏距离用于归一化处理
-def cal2NF(X):
-    return sum(np.multiply(X, X)) ** 0.5
-
-
-# 将数据归一化
-def normalize_data(train_data):
-    for x in train_data:
-        for data in x:
-            two_NF = cal2NF(data)
-            for i in range(len(data)):
-                if two_NF != 0:
-                    data[i] = data[i] / two_NF
-    # 返回归一化处理之后的数据，数据结构不变
-    return train_data
-
-
-# 将权值归一化
-def nomalize_weight(com_weight):
-    for x in com_weight:
-        for y in x:
-            for data in y:
-                two_NF = cal2NF(data)
-                for i in range(len(data)):
-                    if two_NF != 0:
-                        data[i] = data[i] / two_NF
-    return com_weight
-
-
-# 得到获胜神经元索引
-def getWinner(data, com_weight):
-    max_sim = 0
-    n, m, _, _ = np.shape(com_weight)
-    mark_n, mark_m = 0, 0
-    for i in range(n):
-        for j in range(m):
-            sim = np.sum(data * com_weight[i, j])
-            # sim = np.sum(np.dot(data, com_weight[i][j])) / (
-            #     np.sqrt(np.sum(np.dot(data, data.transpose())))
-            #     * np.sqrt(
-            #         np.sum(np.dot(com_weight[i][j], com_weight[i][j].transpose()))
-            #     )
-            # )
-            if sim > max_sim:
-                max_sim = sim
-                mark_n = i
-                mark_m = j
-    return mark_n, mark_m
-
-
-# 得到获胜神经元索引
-def getWinnerDist(data, com_weight):
-    min_dist = np.inf
-    n, m, _, _ = np.shape(com_weight)
-    mark_n, mark_m = 0, 0
-    for i in range(n):
-        for j in range(m):
-            dist = np.sum(cal2NF(com_weight[i][j] - data))
-            if dist < min_dist:
-                min_dist = dist
-                mark_n = i
-                mark_m = j
-    return mark_n, mark_m
-
-
-# 得到获胜神经元周围的兴奋神经元的索引
-def getNeighbor(n, m, N_neighbor, com_weight):
-    res = []
-    nn, mm, ww, hh = np.shape(com_weight)
-    for i in range(nn):
-        for j in range(mm):
-            N = int(((i - n) ** 2 + (j - m) ** 2) ** 0.5)
-            if N <= N_neighbor:
-                res.append((i, j, N))
-    return res
-
-
-# 学习率 与迭代次数和拓扑距离相关
-def eta(t, N):
-    return (0.3 / (t + 1)) * (math.e ** (-N))
-
-
-# som
-def som(train_data, train_label, com_weight, T, N_neighbor, method=getWinner):
-    for t in range(T - 1):
-        # print("epoch:" + str(t))
-        com_weight = nomalize_weight(com_weight)
-        for data in train_data:
-            n, m = method(data, com_weight)
-            neighbor = getNeighbor(n, m, N_neighbor, com_weight)
-            for x in neighbor:
-                j_n = x[0]
-                j_m = x[1]
-                N = x[2]
-                com_weight[j_n][j_m] = com_weight[j_n][j_m] + eta(t, N) * (
-                    data - com_weight[j_n][j_m]
-                )
-            N_neighbor = N_neighbor - (t + 1) / 200
-    return com_weight
-
-
-# 为每个神经元打上标签
-def create_labels(com_weight, method=getWinner):
-    _, M, _, _ = np.shape(com_weight)
-    belong = {}
-    for i in range(len(train_data)):
-        n, m = method(train_data[i], com_weight)
-        key = n * M + m
-        if key in belong.keys():
-            belong[key].append(train_labels[i])
-        else:
-            belong[key] = []
-            belong[key].append(train_labels[i])
-    labels = {}
-
-    for i in belong.keys():
-        tags = belong.get(i)
-        numOfTag = np.zeros(10)
-        for num in tags:
-            num = int(num)
-            numOfTag[num] += 1
-        labels[i] = np.argmax(numOfTag)
-    return labels, com_weight
-
-
-def test(labels, weight, test_data, method=getWinner):
-    _, M, _, _ = np.shape(com_weight)
-    predicts = []
-    if len(np.shape(test_data)) >= 3:
-        for i in range(len(test_data)):
-            n, m = method(test_data[i], weight)
-            i = n * M + m
-            predicts.append(labels.get(i))
-    else:
-        n, m = method(test_data, weight)
-        i = n * M + m
-        predicts.append(labels.get(i))
-    # 数据的标签与最近的神经元相同
-    return predicts
-
-
-def score(predicts, labels):
-    assert len(predicts) == len(labels)
-    cnt = 0
-    num = len(predicts)
-    for i in range(num):
-        if predicts[i] == labels[i]:
-            cnt += 1
-    return cnt / num
-
-
-def decode_idx3_ubyte(idx3_ubyte_file):
-    """
-    解析 idx3 文件的通用函数
-    :param idx3_ubyte_file: idx3 文件路径
-    :return: 数据集
-    """
-    # 读取二进制数据
-    bin_data = open(idx3_ubyte_file, "rb").read()
-    # 解析文件头信息，依次为魔数、图片数量、每张图片高、每张图片宽
-    offset = 0
-    fmt_header = ">iiii"
-    magic_number, num_images, num_rows, num_cols = struct.unpack_from(
-        fmt_header, bin_data, offset
-    )
-    # 解析数据集
-    image_size = num_rows * num_cols
-    offset += struct.calcsize(fmt_header)
-    print(offset)
-    fmt_image = ">" + str(image_size) + "B"
-
-    print(fmt_image, offset, struct.calcsize(fmt_image))
-    images = np.empty((num_images, num_rows, num_cols))
-    for i in range(num_images):
-        images[i] = np.array(struct.unpack_from(fmt_image, bin_data, offset)).reshape(
-            (num_rows, num_cols)
-        )
-        offset += struct.calcsize(fmt_image)
-    return images
-
-
-def decode_idx1_ubyte(idx1_ubyte_file):
-    """
-    解析 idx1 文件的通用函数
-    :param idx1_ubyte_file: idx1 文件路径
-    :return: 数据集
-    """
-    # 读取二进制数据
-    bin_data = open(idx1_ubyte_file, "rb").read()
-    # 解析文件头信息
-    offset = 0
-    fmt_header = ">ii"
-    magic_number, num_images = struct.unpack_from(fmt_header, bin_data, offset)
-    # 解析数据集
-    offset += struct.calcsize(fmt_header)
-    fmt_image = ">B"
-    labels = np.empty(num_images)
-    for i in range(num_images):
-        labels[i] = struct.unpack_from(fmt_image, bin_data, offset)[0]
-        offset += struct.calcsize(fmt_image)
-    return labels
-
-
-def draw(weight, labels):  # 绘图
-    _, M, _, _ = np.shape(weight)
-    cp = [
-        "red",
-        "orange",
-        "gold",
-        "yellow",
-        "green",
-        "lime",
-        "cyan",
-        "dodgerblue",
-        "blue",
-        "purple",
+# 函数说明：创建数据集  Returns：dataSet：数据集 labels：分类属性
+def createDataSet(path):
+    dataSet = []
+    fr = open(path)
+    for line in fr.readlines():
+        lineArr = array(line.strip().split(), dtype=float)
+        dataSet.append(lineArr[1:])
+    labels = [
+        "age",
+        "spectacle prescription",
+        "astigmatic",
+        "tear production rate",
     ]
-    plt.xlabel("i")
-    plt.ylabel("j")
-    for key in labels.keys():
-        j = key % M
-        i = (key - j) / M
-        plt.scatter(i, j, c=cp[labels[key]])
-    plt.show()
+    return array(dataSet), array(labels)
 
 
-def drawH(weight, labels):  # 绘图
-    _, M, _, _ = np.shape(weight)
-    X = np.empty(shape=(M, M))
-    for key in labels.keys():
-        j = int(key % M)
-        i = int((key - j) / M)
-        X[i][j] = labels[key]
-    plt.xlabel("i")
-    plt.ylabel("j")
-    plt.imshow(X, interpolation="nearest")
-    plt.show()
+def wineDataSet():
+    dataSet = []
+    fr = open("lab5/wine.data")
+    for line in fr.readlines():
+        lineArr = array(line.strip().split(","), dtype=float)
+        dataSet.append(append(lineArr[1:], lineArr[0]))
+    dataSet = array(dataSet)
+    labels = array(
+        [
+            "Alcohol",
+            "Malic acid",
+            "Ash",
+            "Alcalinity of ash  ",
+            "Magnesium",
+            "Total phenols",
+            "Flavanoids",
+            "Nonflavanoid phenols",
+            "Proanthocyanins",
+            "Color intensity",
+            "Hue",
+            "OD280/OD315 of diluted wines",
+            "Proline",
+        ]
+    )
+    return dataSet, labels
 
 
-def drawScore(x, scores):
-    plt.bar(x, scores)
-    plt.xlabel("size: (M, N)")
-    plt.ylabel("score")
-    plt.show()
+# 函数说明：创建决策树  Parameters: dataSet：训练数据集 labels：分类属性标签 featLabels：存储选择的最优特征标签  Returns：myTree：决策树
+def createTree(dataSet, labels, featLabels, method):
+    classList = dataSet[:, -1]
+    if all(classList == classList[0]):
+        return classList[0]
+    if shape(dataSet)[0] <= 1:
+        return majorityCnt(classList)
+
+    feat = chooseBestFeatureToSplit(dataSet, method)
+    featLab = labels[feat]
+    append(featLabels, featLab)
+    myTree = {featLab: {}}
+    for value in unique(dataSet[:, feat]):
+        myTree[featLab][value] = createTree(
+            splitDataSet(dataSet, feat, value),
+            append(labels[:feat], labels[feat + 1 :]),
+            featLabels,
+            method,
+        )
+    return myTree
 
 
-# 训练集文件
-train_images_idx3_ubyte_file = "lab6/MNIST/train-images.idx3-ubyte"
-# 训练集标签文件
-train_labels_idx1_ubyte_file = "lab6/MNIST/train-labels.idx1-ubyte"
-# 测试集文件
-test_images_idx3_ubyte_file = "lab6/MNIST/t10k-images.idx3-ubyte"
-# 测试集标签文件
-test_labels_idx1_ubyte_file = "lab6/MNIST/t10k-labels.idx1-ubyte"
+# 函数说明：计算给定数据集的经验熵（香农熵）  Parameters：dataSet：数据集  Returns：shannonEnt：经验熵
+def calcShannonEnt(dataSet):
+    num = shape(dataSet)[0]
+    type = unique(dataSet[:, -1])
+    p = {}
+    shannonEnt = 0
+    for i in type:
+        p[i] = sum(dataSet[:, -1] == i) / num
+        shannonEnt -= p[i] * log2(p[i])
+    return shannonEnt  # 返回经验熵
 
-# 自行设置参数：SOM 网络 size：（M，N） 迭代次数：T 近邻范围：N_neighbor
+
+def calcGini(dataSet):
+    labels_count = {}
+    number = shape(dataSet)[0]
+    for i, _ in enumerate(dataSet):
+        label = dataSet[i][-1]
+        if label in labels_count.keys():
+            labels_count[label] += 1
+        else:
+            labels_count[label] = 1
+    Gini = 0.0
+    for label, value in labels_count.items():
+        pr = 1.0 * value / number * value / number
+        Gini += 1 - pr
+    return Gini
+
+
+def calcError(dataSet):
+    num = shape(dataSet)[0]
+    type = unique(dataSet[:, -1])
+    p = []
+    for i in type:
+        p.append(sum(dataSet[:, -1] == i) / num)
+    return 1 - max(p)
+
+
+# 函数说明：按照给定特征划分数据集  Parameters：dataSet:待划分的数据集 axis：划分数据集的特征 value：需要返回的特征值  Returns：返回划分后的数据集
+def splitDataSet(dataSet, axis, value):
+    retDataSet = []
+    for row in dataSet:
+        if row[axis] == value:
+            retDataSet.append(append(row[:axis], row[axis + 1 :]))
+    return array(retDataSet)
+
+
+def chooseBestFeatureToSplit(dataSet, method):
+    featNum = shape(dataSet)[1] - 1
+    entD = method(dataSet)
+    gainMax = float("-inf")
+    bestFeature = -1
+
+    for feat in range(featNum):
+        ent = 0
+        for value in unique(dataSet[:, feat]):
+            subDataSet = splitDataSet(dataSet, feat, value)
+            p = shape(subDataSet)[0] / shape(dataSet)[0]
+            ent += p * method(subDataSet)
+        gain = entD - ent
+        if gain > gainMax:
+            gainMax = gain
+            bestFeature = feat
+    return bestFeature
+
+
+# 函数说明：统计 classList 中出现次数最多的元素（类标签）  Parameters：classList：类标签列表  Returns：sortedClassCount[0][0]：出现次数最多的元素（类标签）
+def majorityCnt(classList):
+    classCount = {}
+    # 统计 classList 中每个元素出现的次数
+    for vote in classList:
+        if vote not in classCount.keys():
+            classCount[vote] = 0
+            classCount[vote] += 1
+        # 根据字典的值降序排列
+    sortedClassCount = sorted(
+        classCount.items(), key=operator.itemgetter(1), reverse=True
+    )
+    return sortedClassCount[0][0]
+
+
+# 函数说明：获取决策树叶子节点的数目  Parameters：myTree：决策树  Returns：numLeafs：决策树的叶子节点的数目
+def getNumLeafs(myTree):
+    numLeafs = 0
+    firstStr = next(iter(myTree))
+    secondDict = myTree[firstStr]
+    for key in secondDict.keys():
+        if type(secondDict[key]).__name__ == "dict":
+            numLeafs += getNumLeafs(secondDict[key])
+        else:
+            numLeafs += 1
+    return numLeafs
+
+
+# 函数说明:获取决策树的层数  Parameters: myTree:决策树  Returns: maxDepth:决策树的层数
+def getTreeDepth(myTree):
+    maxDepth = 0  # 初始化决策树深度
+    firstStr = next(
+        iter(myTree)
+    )  # python3 中myTree.keys()返回的是dict_keys,不在是 list,所以不能使用myTree.keys()[0] 的方法获取结点属性，可以使用list(myTree.keys())[0]
+    secondDict = myTree[firstStr]  # 获取下一个字典
+    for key in secondDict.keys():
+        if type(secondDict[key]).__name__ == "dict":  # 测试该结点是否为字典，如果不是字典，代表此结点为叶子结点
+            thisDepth = 1 + getTreeDepth(secondDict[key])
+        else:
+            thisDepth = 1
+        if thisDepth > maxDepth:
+            maxDepth = thisDepth  # 更新层数
+    return maxDepth
+
+
+# 函数说明:绘制结点  Parameters: nodeTxt - 结点名 centerPt - 文本位置 parentPt - 标注的箭头位置 nodeType - 结点格式
+def plotNode(nodeTxt, centerPt, parentPt, nodeType):
+    arrow_args = dict(arrowstyle="<-")  # 定义箭头格式
+    font = FontProperties(fname=r"c:\windows\fonts\simsun.ttc", size=14)  # 设置中文字体
+    createPlot.ax1.annotate(
+        nodeTxt,
+        xy=parentPt,
+        xycoords="axes fraction",  # 绘制结点
+        xytext=centerPt,
+        textcoords="axes fraction",
+        va="center",
+        ha="center",
+        bbox=nodeType,
+        arrowprops=arrow_args,
+        font_properties=font,
+    )
+
+
+# 函数说明:标注有向边属性值  Parameters: cntrPt、parentPt - 用于计算标注位置 txtString - 标注的内容
+def plotMidText(cntrPt, parentPt, txtString):
+    xMid = (parentPt[0] - cntrPt[0]) / 2.0 + cntrPt[0]  # 计算标注位置
+    yMid = (parentPt[1] - cntrPt[1]) / 2.0 + cntrPt[1]
+    createPlot.ax1.text(xMid, yMid, txtString, va="center", ha="center", rotation=30)
+
+
+# 函数说明:绘制决策树  Parameters: myTree - 决策树(字典) parentPt - 标注的内容 nodeTxt - 结点名
+def plotTree(myTree, parentPt, nodeTxt):
+    decisionNode = dict(boxstyle="sawtooth", fc="0.8")  # 设置结点格式
+    leafNode = dict(boxstyle="round4", fc="0.8")  # 设置叶结点格式
+    numLeafs = getNumLeafs(myTree)  # 获取决策树叶结点数目，决定了树的宽度
+    depth = getTreeDepth(myTree)  # 获取决策树层数
+    firstStr = next(iter(myTree))  # 下个字典
+    cntrPt = (
+        plotTree.xOff + (1.0 + float(numLeafs)) / 2 / plotTree.totalW,
+        plotTree.yOff,
+    )  # 中心位置
+    plotMidText(cntrPt, parentPt, nodeTxt)  # 标注有向边属性值
+    plotNode(firstStr, cntrPt, parentPt, decisionNode)  # 绘制结点
+    secondDict = myTree[firstStr]  # 下一个字典，也就是继续绘制子结点
+    plotTree.yOff = plotTree.yOff - 1.0 / plotTree.totalD  # y 偏移
+    for key in secondDict.keys():
+        if type(secondDict[key]).__name__ == "dict":
+            # 测试该结点是否为字典，如果不是字典，代表此结点为叶子结点
+            plotTree(secondDict[key], cntrPt, str(key))  # 不是叶结点，递归调用继续绘制
+        else:
+            # 如果是叶结点，绘制叶结点，并标注有向边属性值
+            plotTree.xOff = plotTree.xOff + 1.0 / plotTree.totalW
+            plotNode(secondDict[key], (plotTree.xOff, plotTree.yOff), cntrPt, leafNode)
+            plotMidText((plotTree.xOff, plotTree.yOff), cntrPt, str(key))
+    plotTree.yOff = plotTree.yOff + 1.0 / plotTree.totalD
+
+
+# 函数说明:创建绘制面板  Parameters: inTree - 决策树(字典)
+def createPlot(inTree):
+    fig = plt.figure(1, facecolor="white")  # 创建 fig
+    fig.clf()  # 清空 fig
+    axprops = dict(xticks=[], yticks=[])
+    createPlot.ax1 = plt.subplot(111, frameon=False, **axprops)  # 去掉 x、y 轴
+    plotTree.totalW = float(getNumLeafs(inTree))  # 获取决策树叶结点数目
+    plotTree.totalD = float(getTreeDepth(inTree))  # 获取决策树层数
+    plotTree.xOff = -0.5 / plotTree.totalW
+    plotTree.yOff = 1.0  # x 偏移
+    plotTree(inTree, (0.5, 1.0), "")  # 绘制决策树
+    plt.show()  # 显示绘制结果
+
+
+def predict(tree, testSets, labels):
+    def one(t, v, l):
+        if len(v) == 1 or type(t) == type(v[-1]):
+            return t
+        key = list(t)[0]
+        feat = -1
+        for i, attri in enumerate(l):
+            if attri == key:
+                feat = i
+        value = v[feat]
+        newVector = delete(v, feat)
+        newLabels = delete(l, feat)
+
+        return one(t[key][value], newVector, newLabels)
+
+    predicts = []
+    for row in testSets:
+        predicts.append(one(tree, row, labels))
+    return array(predicts)
+
+
+def score(tree, testSets, labels):
+    predicts = predict(tree, testSets, labels)
+    classes = testSets[:, -1]
+    num = shape(classes)[0]
+    right = 0
+    for i in range(num):
+        if predicts[i] == classes[i]:
+            right += 1
+    return right / num
+
+
 if __name__ == "__main__":
-    # 为降低运算量，这里只加载 500 条数据
-    np.random.seed(7)
-    indexes = np.random.randint(low=0, high=60000, size=[500])
-    train_datas = decode_idx3_ubyte(train_images_idx3_ubyte_file)[indexes]
-    train_labels = decode_idx1_ubyte(train_labels_idx1_ubyte_file)[indexes]
-    indexes = np.random.randint(low=0, high=10000, size=[20])
-    test_image = decode_idx3_ubyte(test_images_idx3_ubyte_file)[indexes]
-    test_label = decode_idx1_ubyte(test_labels_idx1_ubyte_file)[indexes]
-    train_data = normalize_data(train_datas)
+    # dataSet, labels = createDataSet("lab5/lenses.data")
+    dataSet, labels = wineDataSet()
+    methods = {"entropy": calcShannonEnt, "gini": calcGini, "error": calcError}
 
-    T = 10
-    N_neighbor = 21
-    # X = []
-    # Y = []
-    # size = [(4, 4), (4, 8), (4, 12), (4, 4), (8, 4), (12, 4), (20, 20)]
-    # for i in range(len(size)):
-    #     com_weight = initCompetition(size[i][0], size[i][1], 28, 28)
-    #     X.append(i)
-    #     weight = som(train_data, train_labels, com_weight, T, N_neighbor)
-    #     labels, weight = create_labels(weight)
-    #     # print("labels:\n", labels)
-    #     predicts = test(labels, weight, test_image)
-    #     # print("predict_label:\n", predicts)
-    #     # print("test_label:\n", test_label)
-    #     # print(f"i:{i}", score(predicts, test_label))
-    #     # print()
-    #     Y.append(score(predicts, test_label))
+    # x_train, x_test = train_test_split(dataSet, random_state=1, train_size=0.9)
 
-    # drawScore(X, Y)
-    com_weight = initCompetition(8, 8, 28, 28)
-    weight = som(train_data, train_labels, com_weight, T, N_neighbor)
-    labels, weight = create_labels(weight)
-    predicts = test(labels, weight, test_image)
-    print("score", score(predicts, test_label))
-    print("labels", labels)
-
-    draw(weight, labels)
-    drawH(weight, labels)
+    featLabels = array([])
+    myTree = createTree(dataSet, labels, featLabels, method=methods["entropy"])
+    print(myTree)
+    # print(score(myTree, dataSet, labels))
+    # createPlot(myTree)
