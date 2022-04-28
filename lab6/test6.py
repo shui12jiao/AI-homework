@@ -1,5 +1,3 @@
-# coding=utf-8
-
 from sklearn import tree
 from sklearn.datasets import load_wine
 from sklearn.datasets import load_iris
@@ -17,9 +15,28 @@ def draw():
 
 wine = load_wine()
 X_train, X_test, y_train, y_test = train_test_split(
-    wine.data, wine.target, test_size=0.3
+    wine.data, wine.target, test_size=0.3, random_state=7
 )
 
+
+clf = tree.DecisionTreeClassifier(
+    criterion="entropy",
+    random_state=0,
+    splitter="best",
+    ccp_alpha=0,
+)
+clf = clf.fit(X_train, y_train)
+print("score:", clf.score(X_test, y_test))
+draw()
+
+# 后剪枝
+pruning_path = clf.cost_complexity_pruning_path(X_train, y_train)
+clf = tree.DecisionTreeClassifier(random_state=0, ccp_alpha=0.05)
+clf = clf.fit(X_train, y_train)
+print("score:", clf.score(X_test, y_test))
+draw()
+
+# 预剪枝
 clf = tree.DecisionTreeClassifier(
     criterion="entropy",
     random_state=0,
@@ -31,12 +48,4 @@ clf = tree.DecisionTreeClassifier(
 )
 clf = clf.fit(X_train, y_train)
 print("score:", clf.score(X_test, y_test))
-
-
-# draw()
-
-
-pruning_path = clf.cost_complexity_pruning_path(X_train, y_train)
-clf = tree.DecisionTreeClassifier(random_state=0, ccp_alpha=0.1)
-clf = clf.fit(X_train, y_train)
-print("score:", clf.score(X_test, y_test))
+draw()
