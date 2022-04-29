@@ -19,13 +19,13 @@ loss0 = [  # relu
     0.03884277865290642,
 ]
 
-acc1 = [0.9725, 0.9816, 0.9845, 0.9847, 0.9861]
+acc1 = [0.9838, 0.9854, 0.9887, 0.9898, 0.9885]
 loss1 = [
-    0.08395755290985107,
-    0.05841893330216408,
-    0.04660135507583618,
-    0.04460374265909195,
-    0.04080568253993988,
+    0.052365124225616455,
+    0.041685640811920166,
+    0.03284215182065964,
+    0.03471237048506737,
+    0.03568664938211441,
 ]
 
 x = [1, 2, 3, 4, 5]
@@ -33,7 +33,7 @@ x = [1, 2, 3, 4, 5]
 plt.title("Average Loss")
 plt.ylabel("Loss")
 plt.xlabel("Epoch")
-plt.plot(x, loss1, c="red", label="Longer")
+plt.plot(x, loss1, c="red", label="More")
 plt.plot(x, loss0, c="blue", label="Origin")
 # plt.plot(x, loss3, c="green", label="Tanh")
 # plt.plot(x, loss4, c="yellow", label="Sigmoid")
@@ -45,7 +45,7 @@ plt.show()
 plt.title("Average Accuracy")
 plt.ylabel("Accuracy")
 plt.xlabel("Epoch")
-plt.plot(x, acc1, c="red", label="Longer")
+plt.plot(x, acc1, c="red", label="More")
 plt.plot(x, acc0, c="blue", label="Origin")
 # plt.plot(x, acc3, c="green", label="Tanh")
 # plt.plot(x, acc4, c="yellow", label="Sigmoid")
